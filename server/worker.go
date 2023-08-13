@@ -15,11 +15,11 @@ func NewWorker(conns <-chan net.Conn, delegate base.ServerDelegate,
 	return Worker{ctx, cancel, conns, delegate, callback}
 }
 
-// Worker is a server worker.
+// Worker is a Server worker.
 //
-// It receives a connections from the conns channel and handles them with help
-// of the delegate. Also it implements the jointwork.Task, so it +
-// ConnReceiver may do the job together.
+// It receives a connections from the conns channel and handles them using the
+// delegate. Also it implements jointwork.Task, so it + ConnReceiver may do the
+// job together.
 //
 // If the connection processing failed with an error, it is passed to the
 // LostConnCallback.

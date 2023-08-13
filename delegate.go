@@ -32,7 +32,7 @@ type ClientDelegate[T any] interface {
 
 // ServerDelegate helps the server handle incoming connections.
 //
-// If context is done, the Handle method should return context.Canceled error.
+// Handle method should return the context.Canceled error if a context is done.
 type ServerDelegate interface {
 	Handle(ctx context.Context, conn net.Conn) error
 }

@@ -20,12 +20,12 @@ const (
 // results.
 //
 // That is, when the sequence number of the result does not match the sequence
-// number of any command (waiting for the result) that was send by the client.
+// number of any command (waiting for the result) that was send by Client.
 type UnexpectedResultHandler func(seq base.Seq, result base.Result)
 
 // New creates a new Client.
 //
-// The handler may be nil.
+// The handler parameter may be nil.
 func New[T any](delegate base.ClientDelegate[T],
 	handler UnexpectedResultHandler) *Client[T] {
 	var (
@@ -47,22 +47,22 @@ func New[T any](delegate base.ClientDelegate[T],
 
 // Client is an asynchronious cmd-stream client. It is thread-safe, so you can
 // use it from different goroutines. Here is some of its features:
-//   - Once created, the client is in the connected state, where it can send
+//   - Once created, Client is in the connected state, where it can send
 //     commands and receive results.
 //   - It uses only one connection.
-//   - For each command the client generates a unique sequence number, thanks to
-//     which it maps the results to the commands.
+//   - For each command Client generates a unique sequence number, thanks to
+//     which it maps results to commands.
 //   - If a command timeout elapsed, you can call the Client.Forget() method, so
-//     that the client stops waiting for the results of this command.
+//     that Client stops waiting for the results of this command.
 //   - You can set a handler to handle unexpected results received from the
 //     server.
-//   - To terminate the connection to the server and stop the client, call the
+//   - To terminate the connection to the server and stop Client, call the
 //     Clinet.Close() method.
-//   - You can find out when the client is done with the Client.Done() method.
-//   - If a connection fails with an error the client fails too.
-//   - If the client was failed, you can get a connection error using the
+//   - You can find out when Client is done with the Client.Done() method.
+//   - If a connection fails with an error Client fails too.
+//   - If Client was failed, you can get a connection error using the
 //     Client.Err() method.
-//   - If the client is closed, all commands waiting for the results will
+//   - If Client is closed, all commands waiting for the results will
 //     receive an error (AsyncResult.Error != nil).
 type Client[T any] struct {
 	cancel   context.CancelFunc
@@ -139,13 +139,13 @@ func (c *Client[T]) SendWithDeadline(deadline time.Time, cmd base.Cmd[T],
 }
 
 // Has checks if the command with the specified sequence number has been sent
-// by the client and still waiting for the result.
+// by Client and still waiting for the result.
 func (c *Client[T]) Has(seq base.Seq) bool {
 	_, pst := c.load(seq)
 	return pst
 }
 
-// Forget makes client to forget about the command which still waiting for the
+// Forget makes Client to forget about the command which still waiting for the
 // result.
 //
 // After calling Forget, all the results of the corresponding command will be
@@ -154,12 +154,12 @@ func (c *Client[T]) Forget(seq base.Seq) {
 	c.unmemorize(seq)
 }
 
-// Done returns a channel that is closed when the client terminates.
+// Done returns a channel that is closed when Client terminates.
 func (c *Client[T]) Done() <-chan struct{} {
 	return c.done
 }
 
-// Err returns a connection error, when the client is failed.
+// Err returns a connection error, when Client is failed.
 func (c *Client[T]) Err() (err error) {
 	c.muEr.Lock()
 	err = c.err
@@ -167,7 +167,7 @@ func (c *Client[T]) Err() (err error) {
 	return
 }
 
-// Close closes the client.
+// Close closes Client.
 func (c *Client[T]) Close() (err error) {
 	c.muSt.Lock()
 	defer c.muSt.Unlock()

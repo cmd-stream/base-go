@@ -17,12 +17,12 @@ type Server struct {
 }
 
 // Serve accepts incoming connections on the listener and processes them using
-// the configured number of workers.
+// the configured number of Workers.
 //
-// Each worker can handle one connection at a time using a delegate.
+// Each Worker can handle one connection at a time using a delegate.
 //
 // Always returns a non-nil error. If Conf.WorkersCount == 0, returns
-// ErrNoWorkers. If the server was shutdown returns ErrShutdown, if was closed -
+// ErrNoWorkers. If Server was shutdown returns ErrShutdown, if was closed -
 // ErrClosed.
 func (s *Server) Serve(listener base.Listener) (err error) {
 	if s.Conf.WorkersCount <= 0 {
@@ -41,9 +41,9 @@ func (s *Server) Serve(listener base.Listener) (err error) {
 	return firstErr.(*jointwork.TaskError).Cause()
 }
 
-// Shutdown stops the server from receiving new connections.
+// Shutdown stops Server from receiving new connections.
 //
-// If the server is not serving returns ErrNotServing.
+// If Server is not serving returns ErrNotServing.
 func (s *Server) Shutdown() (err error) {
 	if !s.serving() {
 		return ErrNotServing
@@ -51,9 +51,9 @@ func (s *Server) Shutdown() (err error) {
 	return s.receiver.Shutdown()
 }
 
-// Close closes the server, all existing connections will be closed.
+// Close closes Server, all existing connections will be closed.
 //
-// If the server is not serving returns ErrNotServing.
+// If Server is not serving returns ErrNotServing.
 func (s *Server) Close() (err error) {
 	if !s.serving() {
 		return ErrNotServing

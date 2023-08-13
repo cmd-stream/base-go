@@ -1,6 +1,6 @@
-github.com/ymz-ncnk/jointwork-go v0.0.0-20230729172745-d641eabf4450 h1:lxzvLowy6J1L2rUHzHBs/EublXIx/DHNMxLHLblDFWs=
-github.com/ymz-ncnk/jointwork-go v0.0.0-20230729172745-d641eabf4450/go.mod h1:tlMLH/DS+14AihWI9mwEh+RfQQEDpK06kv2Rx7Dl2aE=
+github.com/ymz-ncnk/jointwork-go v0.0.0-20230813141517-ca76a85bd420 h1:+O5gMzm9NLMdG7J47y0hbKebOqg7ChpWEcHncuY5JE8=
+github.com/ymz-ncnk/jointwork-go v0.0.0-20230813141517-ca76a85bd420/go.mod h1:re120DRSdiOu1EFogLKLedp3FpcSOhJ6upcClPZAJI8=
 github.com/ymz-ncnk/mok v0.1.0 h1:GwOBkbcg1pznoDVLcS5uc2lA5UyT5TktFm7L/kyQNKQ=
 github.com/ymz-ncnk/mok v0.1.0/go.mod h1:ieogm8yEogRr2OSLelrB38i4ZAWSmGhizWj9UQKm6+0=
-github.com/ymz-ncnk/multierr-go v0.0.0-20230729130011-1d63a2e0f42f h1:6Pq4YcA4/yh134OVHn2SbTA/vJx1cS/DUs06uBRBJi4=
-github.com/ymz-ncnk/multierr-go v0.0.0-20230729130011-1d63a2e0f42f/go.mod h1:Y6DG+DHn9auZ/pemU4IxVvs+54GGhTpcBgaOHIGRiAk=
+github.com/ymz-ncnk/multierr-go v0.0.0-20230813140901-5e9302c2e02a h1:mh9cOvtFJMQGPbWHZ7/fw8ODSPgBmDVPpqzjFfke60Y=
+github.com/ymz-ncnk/multierr-go v0.0.0-20230813140901-5e9302c2e02a/go.mod h1:Y6DG+DHn9auZ/pemU4IxVvs+54GGhTpcBgaOHIGRiAk=

@@ -50,13 +50,13 @@ func (r *ConnReceiver) Run() (err error) {
 	return r.correctErr(r.acceptConns())
 }
 
-// Shutdown stops the receiver - the Run() method returns nil, it allows Workers
-// to finish their work.
+// Shutdown stops ConnReceiver - the Run() method returns nil, which allows
+// Workers to finish their work.
 func (r *ConnReceiver) Shutdown() (err error) {
 	return r.terminate(shutdown)
 }
 
-// Stop stops the receiver - the Run() method returns ErrClosed.
+// Stop stops ConnReceiver - the Run() method returns ErrClosed.
 func (r *ConnReceiver) Stop() (err error) {
 	return r.terminate(closed)
 }

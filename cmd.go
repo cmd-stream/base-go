@@ -22,16 +22,17 @@ type Proxy interface {
 // Cmd represents a cmd-stream command.
 //
 // All user-defined commands must implement this interface. The command
-// execution could be time-limited. You can do this using the at parameter,
-// which defines a time when the command was received:
+// execution could be time-limited. This can be achieved by using the at
+// parameter, which indicates when the command was received
 //
-//	deadline := at.Add(CmdTimeout)
-//	ownCtx, cancel := context.WithDeadline(ctx, deadline)
-//	// Do the context dependent work.
-//	...
-//	proxy.SendWithDeadline(deadline, seq, result)
+//		deadline := at.Add(CmdTimeout)
+//		ownCtx, cancel := context.WithDeadline(ctx, deadline)
+//		// Do the context dependent work.
+//		...
+//		err = proxy.SendWithDeadline(deadline, seq, result)
+//	 ...
 //
-// With proxy you can send more than one result back, the last one should have
+// With Proxy you can send more than one result back, the last one should have
 // result.LastOne() == true.
 type Cmd[T any] interface {
 	Exec(ctx context.Context, at time.Time, seq Seq, receiver T, proxy Proxy) error
