@@ -3,7 +3,6 @@ package mock
 import (
 	"context"
 	"net"
-	"reflect"
 
 	"github.com/ymz-ncnk/mok"
 )
@@ -31,19 +30,8 @@ func (m ServerDelegate) RegisterNHandle(n int,
 }
 
 func (m ServerDelegate) Handle(ctx context.Context, conn net.Conn) (err error) {
-	var ctxVal reflect.Value
-	if ctx == nil {
-		ctxVal = reflect.Zero(reflect.TypeOf((*context.Context)(nil)).Elem())
-	} else {
-		ctxVal = reflect.ValueOf(ctx)
-	}
-	var connVal reflect.Value
-	if conn == nil {
-		connVal = reflect.Zero(reflect.TypeOf((*net.Conn)(nil)).Elem())
-	} else {
-		connVal = reflect.ValueOf(conn)
-	}
-	vals, err := m.Call("Handle", ctxVal, connVal)
+	vals, err := m.Call("Handle", mok.SafeVal[context.Context](ctx),
+		mok.SafeVal[net.Conn](conn))
 	if err != nil {
 		panic(err)
 	}

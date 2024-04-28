@@ -2,7 +2,6 @@ package mock
 
 import (
 	"context"
-	"reflect"
 	"time"
 
 	"github.com/cmd-stream/base-go"
@@ -34,25 +33,8 @@ func (c Cmd) RegisterTimeout(
 
 func (c Cmd) Exec(ctx context.Context, at time.Time, seq base.Seq, receiver any,
 	proxy base.Proxy) (err error) {
-	var ctxVal reflect.Value
-	if ctx == nil {
-		ctxVal = reflect.Zero(reflect.TypeOf((*context.Context)(nil)).Elem())
-	} else {
-		ctxVal = reflect.ValueOf(ctx)
-	}
-	var receiverVal any
-	if receiver == nil {
-		receiverVal = reflect.Zero(reflect.TypeOf((*any)(nil)).Elem())
-	} else {
-		receiverVal = reflect.ValueOf(receiver)
-	}
-	var proxyVal any
-	if proxy == nil {
-		proxyVal = reflect.Zero(reflect.TypeOf((*base.Proxy)(nil)).Elem())
-	} else {
-		proxyVal = reflect.ValueOf(proxy)
-	}
-	vals, err := c.Call("Exec", ctxVal, at, seq, receiverVal, proxyVal)
+	vals, err := c.Call("Exec", mok.SafeVal[context.Context](ctx), at, seq,
+		mok.SafeVal[any](receiver), mok.SafeVal[base.Proxy](proxy))
 	if err != nil {
 		panic(err)
 	}
