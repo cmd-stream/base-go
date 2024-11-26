@@ -8,7 +8,7 @@ import (
 	"github.com/ymz-ncnk/jointwork-go"
 )
 
-// Server is a cmd-stream server.
+// Server is responsible for executing commands.
 type Server struct {
 	Conf     Conf
 	Delegate base.ServerDelegate
@@ -41,7 +41,7 @@ func (s *Server) Serve(listener base.Listener) (err error) {
 	return firstErr.(*jointwork.TaskError).Cause()
 }
 
-// Shutdown stops Server from receiving new connections.
+// Shutdown stops the Server from receiving new connections.
 //
 // If Server is not serving returns ErrNotServing.
 func (s *Server) Shutdown() (err error) {
@@ -51,7 +51,7 @@ func (s *Server) Shutdown() (err error) {
 	return s.receiver.Shutdown()
 }
 
-// Close closes Server, all existing connections will be closed.
+// Close closes the Server, all existing connections will be closed.
 //
 // If Server is not serving returns ErrNotServing.
 func (s *Server) Close() (err error) {

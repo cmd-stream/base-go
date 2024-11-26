@@ -5,12 +5,12 @@ import (
 	"time"
 )
 
-// LostConnCallback is called when Server loses connection with the client.
+// LostConnCallback is called when the Server loses connection with the client.
 type LostConnCallback = func(addr net.Addr, err error)
 
 // Conf is a base Server configuration.
 //
-// Workerscount parameter must > 0. LostConnCallback may be nil.
+// WorkersCount parameter must > 0. LostConnCallback may be nil.
 type Conf struct {
 	ConnReceiverConf
 	WorkersCount     int
@@ -19,7 +19,7 @@ type Conf struct {
 
 // ConnReceiverConf is a ConnReceiver configuration.
 //
-// FirstConnTimeout defines the time during which Server should accept the
+// FirstConnTimeout defines the time during which the Server should accept the
 // first connection, if == 0 waits forever.
 type ConnReceiverConf struct {
 	FirstConnTimeout time.Duration
