@@ -16,11 +16,11 @@ const (
 	closed
 )
 
-// UnexpectedResultHandler is a handler which is used to handle unexpected
-// results.
+// UnexpectedResultHandler is used to process unexpected results received from
+// the server.
 //
-// That is, when the sequence number of the result does not match the sequence
-// number of any command (waiting for the result) that was send by Client.
+// This is, when the sequence number of the result does not match the sequence
+// number of any command sent by the Client and awaiting a result.
 type UnexpectedResultHandler func(seq base.Seq, result base.Result)
 
 // New creates a new Client.
@@ -66,9 +66,8 @@ type Client[T any] struct {
 
 // Send sends a command.
 //
-// Adds the command results received from the server to the results channel. If
-// the last one is not large enough, getting results for all commands may hang.
-//
+// It adds command results received from the server to the results channel. If
+// the channel is not large enough, retrieving results for all commands may hang.
 // For each command, generates a unique sequence number, starting with 1.
 // Thus, a command with seq == 1 is sent first, with seq == 2 is sent second,
 // and so on. 0 is reserved for the Ping-Pong game, which keeps a connection

@@ -8,7 +8,7 @@ import (
 
 // ClientReconnectDelegate defines the Reconnect method.
 //
-// This delegate can be used if you want the client to reconnect to the server
+// This delegate can be used if you want the Client to reconnect to the Server
 // in case of a connection loss.
 type ClientReconnectDelegate[T any] interface {
 	ClientDelegate[T]

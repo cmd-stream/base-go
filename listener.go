@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Listener represents a network listener for the cmd-stream server.
+// Listener represents a network listener for the Server.
 //
 // On Close it should not close already accepted connections.
 type Listener interface {

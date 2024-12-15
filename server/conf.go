@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// LostConnCallback is called when the Server loses connection with the client.
+// LostConnCallback is called when the Server loses connection with the Client.
 type LostConnCallback = func(addr net.Addr, err error)
 
 // Conf is a base Server configuration.

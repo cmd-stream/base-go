@@ -2,7 +2,7 @@ package server
 
 import "errors"
 
-// ErrNoWorkers happens when the Server configured with 0 workers.
+// ErrNoWorkers happens when the Server is configured with 0 workers.
 var ErrNoWorkers = errors.New("not positive Conf.WorkersCount")
 
 // ErrNotServing happens when the Server is not serving and is closed or

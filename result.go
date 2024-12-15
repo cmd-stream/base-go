@@ -1,16 +1,15 @@
 package base
 
-// Result represents a result of the cmd-stream command.
+// Result represents a command result.
 //
-// All user-defined results should implement this interface. If the LastOne
-// method returns false, the client will wait for other command results.
+// All user-defined results should implement this interface.
 type Result interface {
 	LastOne() bool
 }
 
-// AsyncResult is an asynchronous result, where the Seq field is a sequence
-// number of the command, Result field - a result itself, Error field - an
-// error that occurred during command execution.
+// AsyncResult is an asynchronous result, where the Seq is a sequence
+// number of the command, Result - a result itself, Error - an error that
+// occurred during the command execution.
 type AsyncResult struct {
 	Seq    Seq
 	Result Result
