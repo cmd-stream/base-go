@@ -31,6 +31,10 @@ type ClientDelegate[T any] interface {
 	Close() error
 }
 
+// ClientKeepaliveDelegate defines the Keepalive method.
+//
+// This delegate can be used if you want the Client to keepalive connection to
+// the Server.
 type ClientKeepaliveDelegate[T any] interface {
 	ClientDelegate[T]
 	Keepalive(muSn *sync.Mutex)
