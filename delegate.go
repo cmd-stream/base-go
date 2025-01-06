@@ -3,6 +3,7 @@ package base
 import (
 	"context"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -28,6 +29,11 @@ type ClientDelegate[T any] interface {
 	Receive() (seq Seq, result Result, err error)
 
 	Close() error
+}
+
+type ClientKeepaliveDelegate[T any] interface {
+	ClientDelegate[T]
+	Keepalive(muSn *sync.Mutex)
 }
 
 // ServerDelegate helps the server handle incoming connections.

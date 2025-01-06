@@ -41,6 +41,9 @@ func New[T any](delegate base.ClientDelegate[T],
 			chFl:     make(chan error, 1),
 		}
 	)
+	if keepaliveDelegate, ok := delegate.(base.ClientKeepaliveDelegate[T]); ok {
+		keepaliveDelegate.Keepalive(&client.muSn)
+	}
 	go receive[T](ctx, &client)
 	return &client
 }

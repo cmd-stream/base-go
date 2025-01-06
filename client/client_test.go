@@ -833,6 +833,20 @@ func TestClient(t *testing.T) {
 			}
 		})
 
+	t.Run("Upon creation, the client should call KeepaliveDelegate.Keepalive()",
+		func(t *testing.T) {
+			var (
+				delegate = mock.NewClientKeepaliveDelegate().RegisterKeepalive(
+					func(muSn *sync.Mutex) {},
+				)
+				mocks = []*mok.Mock{delegate.Mock}
+			)
+			New[any](delegate, nil)
+			if infomap := mok.CheckCalls(mocks); len(infomap) > 0 {
+				t.Error(infomap)
+			}
+		})
+
 }
 
 func SameTime(t1, t2 time.Time) bool {
