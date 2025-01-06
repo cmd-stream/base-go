@@ -313,8 +313,8 @@ Start:
 	if err != nil {
 		err = client.correctErr(err)
 		if netError(err) || err == io.EOF { // TODO Test EOF.
-			if rdelegate, ok := client.delegate.(base.ClientReconnectDelegate[T]); ok {
-				if err = rdelegate.Reconnect(); err == nil {
+			if reconnectDelegate, ok := client.delegate.(base.ClientReconnectDelegate[T]); ok {
+				if err = reconnectDelegate.Reconnect(); err == nil {
 					goto Start
 				}
 			}
