@@ -166,7 +166,9 @@ func (c *Client[T]) Close() (err error) {
 }
 
 func (c *Client[T]) receive(ctx context.Context) (err error) {
-	defer c.unmemorizeAll(err)
+	defer func() {
+		c.unmemorizeAll(err)
+	}()
 	var (
 		seq     base.Seq
 		result  base.Result
