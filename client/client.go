@@ -16,18 +16,18 @@ const (
 	closed
 )
 
-// UnexpectedResultHandler is used to process unexpected results received from
+// UnexpectedResultCallback is used to process unexpected results received from
 // the server.
 //
 // This is, when the sequence number of the result does not match the sequence
 // number of any command sent by the Client and awaiting a result.
-type UnexpectedResultHandler func(seq base.Seq, result base.Result)
+type UnexpectedResultCallback func(seq base.Seq, result base.Result)
 
 // New creates a new Client.
 //
-// The handler parameter may be nil.
+// The callback parameter may be nil.
 func New[T any](delegate base.ClientDelegate[T],
-	handler UnexpectedResultHandler) *Client[T] {
+	callback UnexpectedResultCallback) *Client[T] {
 	var (
 		ctx, cancel        = context.WithCancel(context.Background())
 		flagFl      uint32 = 0
@@ -35,7 +35,7 @@ func New[T any](delegate base.ClientDelegate[T],
 			cancel:   cancel,
 			delegate: delegate,
 			waiting:  make(map[base.Seq]chan<- base.AsyncResult),
-			handler:  handler,
+			callback: callback,
 			done:     make(chan struct{}),
 			flagFl:   &flagFl,
 			chFl:     make(chan error, 1),
@@ -56,7 +56,7 @@ type Client[T any] struct {
 	delegate base.ClientDelegate[T]
 	seq      base.Seq
 	waiting  map[base.Seq]chan<- base.AsyncResult
-	handler  UnexpectedResultHandler
+	callback UnexpectedResultCallback
 	err      error
 	done     chan struct{}
 	flagFl   *uint32
@@ -134,7 +134,7 @@ func (c *Client[T]) Has(seq base.Seq) bool {
 // the result.
 //
 // After calling Forget, all the results of the corresponding command will be
-// handled with UnexpectedResultHandler.
+// handled with UnexpectedResultCallback.
 func (c *Client[T]) Forget(seq base.Seq) {
 	c.unmemorize(seq)
 }
@@ -188,8 +188,8 @@ func (c *Client[T]) receive(ctx context.Context) (err error) {
 		} else {
 			results, pst = c.load(seq)
 		}
-		if !pst && c.handler != nil {
-			c.handler(seq, result)
+		if !pst && c.callback != nil {
+			c.callback(seq, result)
 			continue
 		}
 		select {
