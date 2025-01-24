@@ -17,7 +17,7 @@ const Delta = 100 * time.Millisecond
 
 func TestClient(t *testing.T) {
 
-	t.Run("We should be able to send cmd and receive several results",
+	t.Run("We should be able to send cmd and receive several Results",
 		func(t *testing.T) {
 			var (
 				wantSeq     base.Seq = 1
@@ -81,12 +81,12 @@ func TestClient(t *testing.T) {
 			waitDone(client.Done(), t)
 			result1 := <-results
 			if result1.Result != wantResult1 {
-				t.Errorf("unexpected result, want '%v' actual '%v'", wantResult1,
+				t.Errorf("unexpected Result, want '%v' actual '%v'", wantResult1,
 					result1)
 			}
 			result2 := <-results
 			if result2.Result != wantResult2 {
-				t.Errorf("unexpected result, want '%v' actual '%v'", wantResult2,
+				t.Errorf("unexpected Result, want '%v' actual '%v'", wantResult2,
 					result2.Result)
 			}
 			if infomap := mok.CheckCalls(mocks); len(infomap) > 0 {
@@ -94,7 +94,7 @@ func TestClient(t *testing.T) {
 			}
 		})
 
-	t.Run("When the client receives the last one result it should forget cmd",
+	t.Run("When the client receives the last one Result it should forget cmd",
 		func(t *testing.T) {
 			var (
 				done        = make(chan struct{})
@@ -641,7 +641,7 @@ func TestClient(t *testing.T) {
 			}
 		})
 
-	t.Run("If Delegate.Flush fails with an error, Send of all involved commands should return error",
+	t.Run("If Delegate.Flush fails with an error, Send of all involved Commands should return error",
 		func(t *testing.T) {
 			var (
 				wantErr  = errors.New("flush error")

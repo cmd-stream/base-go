@@ -16,16 +16,16 @@ const (
 	closed
 )
 
-// UnexpectedResultCallback is used to process unexpected results received from
+// UnexpectedResultCallback is used to process unexpected Results received from
 // the server.
 //
-// This is, when the sequence number of the result does not match the sequence
-// number of any command sent by the Client and awaiting a result.
+// This is, when the sequence number of the Result does not match the sequence
+// number of any Command sent by the client that is awaiting a Result.
 type UnexpectedResultCallback func(seq base.Seq, result base.Result)
 
 // New creates a new Client.
 //
-// The callback parameter may be nil.
+// The handler parameter may be nil.
 func New[T any](delegate base.ClientDelegate[T],
 	callback UnexpectedResultCallback) *Client[T] {
 	var (
@@ -48,8 +48,25 @@ func New[T any](delegate base.ClientDelegate[T],
 	return &client
 }
 
-// Client is asynchronous and can be used from several goroutines
-// simultaneously.
+// Client represents a thread-safe, asynchronous cmd-stream client.
+//
+// It uses ClientDelegate for communication tasks such as sending Commands,
+// receiving results, and managing deadlines. If the connection is lost,
+// the client will close, and Client.Err() will provide the connection error.
+//
+// Client.Close() initiates the process of closing the client. You can track its
+// completion by checking Client.Done():
+//
+//	err = client.Close()
+//	if err != nil {
+//	  ...
+//	}
+//	select {
+//	case <-time.NewTimer(time.Second).C:
+//		err = errors.New("unable to close the client, timeout exceeded")
+//		...
+//	case <-client.Done():
+//	}
 type Client[T any] struct {
 	cancel   context.CancelFunc
 	state    int
@@ -67,16 +84,16 @@ type Client[T any] struct {
 	muSt     sync.Mutex
 }
 
-// Send sends a command.
+// Send sends a Command.
 //
-// It adds command results received from the server to the results channel. If
-// the channel is not large enough, retrieving results for all commands may hang.
-// For each command, generates a unique sequence number, starting with 1.
-// Thus, a command with seq == 1 is sent first, with seq == 2 is sent second,
+// It adds Command results received from the server to the results channel. If
+// the channel is not large enough, retrieving results for all Commands may hang.
+// For each Command, generates a unique sequence number, starting with 1.
+// Thus, a Command with seq == 1 is sent first, with seq == 2 is sent second,
 // and so on. 0 is reserved for the Ping-Pong game, which keeps a connection
 // alive.
 //
-// Returns the sequence number and an error != nil if the command was not send.
+// Returns the sequence number and an error != nil if the Command was not send.
 func (c *Client[T]) Send(cmd base.Cmd[T], results chan<- base.AsyncResult) (
 	seq base.Seq, err error) {
 	var chFl chan error
@@ -95,9 +112,9 @@ func (c *Client[T]) Send(cmd base.Cmd[T], results chan<- base.AsyncResult) (
 	return seq, c.flush(seq, chFl)
 }
 
-// SendWithDeadline sends a command with a deadline.
+// SendWithDeadline sends a Command with a deadline.
 //
-// Use this method if you want to send a command and specify the deadline.
+// Use this method if you want to send a Command and specify the deadline.
 // In all other it performs like the Send method.
 func (c *Client[T]) SendWithDeadline(deadline time.Time, cmd base.Cmd[T],
 	results chan<- base.AsyncResult) (seq base.Seq, err error) {
@@ -123,17 +140,17 @@ func (c *Client[T]) SendWithDeadline(deadline time.Time, cmd base.Cmd[T],
 	return seq, c.flush(seq, chFl)
 }
 
-// Has checks if the command with the specified sequence number has been sent
-// by the Client and still waiting for the result.
+// Has checks if the Command with the specified sequence number has been sent
+// by the Client and still waiting for the Result.
 func (c *Client[T]) Has(seq base.Seq) bool {
 	_, pst := c.load(seq)
 	return pst
 }
 
-// Forget makes the Client to forget about the command which still waiting for
+// Forget makes the Client to forget about the Command which still waiting for
 // the result.
 //
-// After calling Forget, all the results of the corresponding command will be
+// After calling Forget, all the results of the corresponding Command will be
 // handled with UnexpectedResultCallback.
 func (c *Client[T]) Forget(seq base.Seq) {
 	c.unmemorize(seq)
@@ -154,7 +171,7 @@ func (c *Client[T]) Err() (err error) {
 
 // Close terminates the underlying connection and closes the Client.
 //
-// All commands waiting for the results will receive an error
+// All Commands waiting for the results will receive an error
 // (AsyncResult.Error != nil).
 func (c *Client[T]) Close() (err error) {
 	c.muSt.Lock()

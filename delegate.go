@@ -7,16 +7,7 @@ import (
 	"time"
 )
 
-// ClientReconnectDelegate defines the Reconnect method.
-//
-// This delegate can be used if you want the Client to reconnect to the Server
-// in case of a connection loss.
-type ClientReconnectDelegate[T any] interface {
-	ClientDelegate[T]
-	Reconnect() error
-}
-
-// ClientDelegate helps the client to send commands and receive results.
+// ClientDelegate helps the client to send Commands and receive Results.
 type ClientDelegate[T any] interface {
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
@@ -31,10 +22,19 @@ type ClientDelegate[T any] interface {
 	Close() error
 }
 
+// ClientReconnectDelegate defines the Reconnect method.
+//
+// This delegate can be used if you want the client to reconnect to the server
+// in case of a connection loss.
+type ClientReconnectDelegate[T any] interface {
+	ClientDelegate[T]
+	Reconnect() error
+}
+
 // ClientKeepaliveDelegate defines the Keepalive method.
 //
-// This delegate can be used if you want the Client to keepalive connection to
-// the Server.
+// This delegate can be used if you want the client to keepalive connection to
+// the server.
 type ClientKeepaliveDelegate[T any] interface {
 	ClientDelegate[T]
 	Keepalive(muSn *sync.Mutex)
@@ -42,7 +42,7 @@ type ClientKeepaliveDelegate[T any] interface {
 
 // ServerDelegate helps the server handle incoming connections.
 //
-// Handle method should return the context.Canceled error if a context is done.
+// Handle method should return context.Canceled error if the context is done.
 type ServerDelegate interface {
 	Handle(ctx context.Context, conn net.Conn) error
 }

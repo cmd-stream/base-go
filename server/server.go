@@ -8,18 +8,24 @@ import (
 	"github.com/ymz-ncnk/jointwork-go"
 )
 
-// Server is responsible for executing commands.
+// LostConnCallback is invoked when the Server loses its connection to a Client.
+type LostConnCallback = func(addr net.Addr, err error)
+
+// Server represents a cmd-stream server.
+//
+// It utilizes a configurable number of workers to manage client connections
+// using a specified ServerDelegate.
 type Server struct {
 	Conf     Conf
 	Delegate base.ServerDelegate
+	Callback LostConnCallback
 	receiver *ConnReceiver
 	mu       sync.Mutex
 }
 
-// Serve accepts incoming connections on the listener and processes them using
-// the configured number of Workers.
+// Serve accepts and process incoming connections on the listener using workers.
 //
-// Each Worker can handle one connection at a time using a delegate.
+// Each worker can handle one connection at a time.
 //
 // Always returns a non-nil error. If Conf.WorkersCount == 0, returns
 // ErrNoWorkers. If Server was shutdown returns ErrShutdown, if was closed -
@@ -72,7 +78,7 @@ func (s *Server) makeTasks(conns chan net.Conn, delegate base.ServerDelegate) (
 	tasks = make([]jointwork.Task, 1+s.Conf.WorkersCount)
 	tasks[0] = s.receiver
 	for i := 1; i < len(tasks); i++ {
-		tasks[i] = NewWorker(conns, delegate, s.Conf.LostConnCallback)
+		tasks[i] = NewWorker(conns, delegate, s.Callback)
 	}
 	return
 }

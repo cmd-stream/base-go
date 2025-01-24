@@ -25,12 +25,12 @@ func NewConnReceiver(conf ConnReceiverConf, listener base.Listener,
 	}
 }
 
-// ConnReceiver accepts incoming connections on the listener and adds them to
-// the conns channel.
+// ConnReceiver listens for incoming connections and adds them to the conns
+// channel.
 //
-// It can wait for the first connection for a limited amount of time, after
-// which, it stops. Also ConnReceiver implements the jointwork.Task interface,
-// so it + Workers may do the job together.
+// It can wait for the first connection for a specified duration, after which it
+// stops. ConnReceiver also implements the jointwork.Task interface, allowing it
+// to work in conjunction with Workers.
 type ConnReceiver struct {
 	conf     ConnReceiverConf
 	listener base.Listener

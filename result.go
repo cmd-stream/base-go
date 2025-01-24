@@ -1,15 +1,16 @@
 package base
 
-// Result represents a command result.
+// Result represents the outcome of the Сommand execution.
 //
-// All user-defined results should implement this interface.
+// LastOne method indicates the final Result of the Command.
 type Result interface {
 	LastOne() bool
 }
 
-// AsyncResult is an asynchronous result, where the Seq is a sequence
-// number of the command, Result - a result itself, Error - an error that
-// occurred during the command execution.
+// AsyncResult represents an asynchronous result.
+//
+// Seq is the sequence number of the Command, Error != nil if something went
+// wrong with the connection.
 type AsyncResult struct {
 	Seq    Seq
 	Result Result

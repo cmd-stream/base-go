@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-// Listener represents a network listener for the Server.
+// Listener is a server network listener.
 //
-// On Close it should not close already accepted connections.
+// On Close, it should not close already accepted connections.
 type Listener interface {
 	Addr() net.Addr
 	SetDeadline(time.Time) error

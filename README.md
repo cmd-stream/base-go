@@ -4,9 +4,10 @@
 [![GoReportCard](https://goreportcard.com/badge/cmd-stream/base-go)](https://goreportcard.com/report/github.com/cmd-stream/base-go)
 [![codecov](https://codecov.io/gh/cmd-stream/base-go/graph/badge.svg?token=RXPJ6ZIPK7)](https://codecov.io/gh/cmd-stream/base-go)
 
-base-go serves as the foundation for building the cmd-stream-go client and 
-server.
+base-go contains the definitions for both the client and server.
 
-The client delegates communication with the server to `ClientDelegate`, which 
-handles sending commands and receiving results. Similarly, the server uses 
-`ServerDelegate` to manage connections, execute commands, and send back results.
+The client delegates all communication tasks, such as sending Commands,
+receiving Results, and closing the connection, to the `ClientDelegate`.
+
+The server utilizes a configurable number of workers to manage client 
+connections using `ServerDelegate`.
