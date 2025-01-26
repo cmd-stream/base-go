@@ -51,7 +51,7 @@ func New[T any](delegate base.ClientDelegate[T],
 // Client represents a thread-safe, asynchronous cmd-stream client.
 //
 // It uses ClientDelegate for communication tasks such as sending Commands,
-// receiving results, and managing deadlines. If the connection is lost,
+// receiving Results, or managing deadlines. If the connection is lost,
 // the client will close, and Client.Err() will provide the connection error.
 //
 // Client.Close() initiates the process of closing the client. You can track its
@@ -63,7 +63,7 @@ func New[T any](delegate base.ClientDelegate[T],
 //	}
 //	select {
 //	case <-time.NewTimer(time.Second).C:
-//		err = errors.New("unable to close the client, timeout exceeded")
+//		err = errors.New("timeout exceeded")
 //		...
 //	case <-client.Done():
 //	}
@@ -86,7 +86,7 @@ type Client[T any] struct {
 
 // Send sends a Command.
 //
-// It adds Command results received from the server to the results channel. If
+// It adds Results received from the server to the results channel. If
 // the channel is not large enough, retrieving results for all Commands may hang.
 // For each Command, generates a unique sequence number, starting with 1.
 // Thus, a Command with seq == 1 is sent first, with seq == 2 is sent second,
