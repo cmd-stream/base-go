@@ -1,4 +1,4 @@
-package server
+package bser
 
 import (
 	"errors"
@@ -16,12 +16,12 @@ func TestConnReceiver(t *testing.T) {
 	t.Run("Conf.FirstConnTimeout should be applied only to the first conn + if Listener.SetDeadline failed with an error, Run should return it",
 		func(t *testing.T) {
 			var (
-				wantErr   = errors.New("SetDeadline error")
-				startTime = time.Now()
-				conf      = ConnReceiverConf{FirstConnTimeout: time.Second}
-				listener  = mock.NewListener().RegisterSetDeadline(
+				wantErr              = errors.New("SetDeadline error")
+				startTime            = time.Now()
+				wantFirstConnTimeout = time.Second
+				listener             = mock.NewListener().RegisterSetDeadline(
 					func(deadline time.Time) (err error) {
-						wantDeadline := startTime.Add(conf.FirstConnTimeout)
+						wantDeadline := startTime.Add(wantFirstConnTimeout)
 						if !SameTime(deadline, wantDeadline) {
 							return fmt.Errorf("unexpected deadline, want '%v' actual '%v'",
 								wantDeadline,
@@ -31,7 +31,9 @@ func TestConnReceiver(t *testing.T) {
 					},
 				)
 				mocks    = []*mok.Mock{listener.Mock}
-				receiver = NewConnReceiver(conf, listener, make(chan net.Conn))
+				receiver = NewConnReceiver(listener, make(chan net.Conn),
+					WithFirstConnTimeout(wantFirstConnTimeout),
+				)
 			)
 			testConnReceiver(receiver, wantErr, mocks, t)
 		})
@@ -45,7 +47,7 @@ func TestConnReceiver(t *testing.T) {
 				)
 				conns    = make(chan net.Conn)
 				mocks    = []*mok.Mock{listener.Mock}
-				receiver = NewConnReceiver(ConnReceiverConf{}, listener, conns)
+				receiver = NewConnReceiver(listener, conns)
 			)
 			testConnReceiver(receiver, wantErr, mocks, t)
 		})
@@ -57,11 +59,11 @@ func TestConnReceiver(t *testing.T) {
 				wantConn = mock.NewConn().RegisterClose(
 					func() (err error) { return nil },
 				)
-				startTime = time.Now()
-				conf      = ConnReceiverConf{FirstConnTimeout: time.Second}
-				listener  = mock.NewListener().RegisterSetDeadline(
+				startTime            = time.Now()
+				wantFirstConnTimeout = time.Second
+				listener             = mock.NewListener().RegisterSetDeadline(
 					func(deadline time.Time) (err error) {
-						wantDeadline := startTime.Add(conf.FirstConnTimeout)
+						wantDeadline := startTime.Add(wantFirstConnTimeout)
 						if !SameTime(deadline, wantDeadline) {
 							return fmt.Errorf("unexpected deadline, want '%v' actual '%v'",
 								wantDeadline,
@@ -84,7 +86,9 @@ func TestConnReceiver(t *testing.T) {
 					},
 				)
 				mocks    = []*mok.Mock{wantConn.Mock, listener.Mock}
-				receiver = NewConnReceiver(conf, listener, make(chan net.Conn, 1))
+				receiver = NewConnReceiver(listener, make(chan net.Conn, 1),
+					WithFirstConnTimeout(wantFirstConnTimeout),
+				)
 			)
 			testConnReceiver(receiver, wantErr, mocks, t)
 		})
@@ -100,7 +104,7 @@ func TestConnReceiver(t *testing.T) {
 					},
 				)
 				mocks    = []*mok.Mock{listener.Mock}
-				receiver = NewConnReceiver(ConnReceiverConf{}, listener, make(chan net.Conn, 1))
+				receiver = NewConnReceiver(listener, make(chan net.Conn, 1))
 			)
 			testConnReceiver(receiver, wantErr, mocks, t)
 		})
@@ -122,7 +126,7 @@ func TestConnReceiver(t *testing.T) {
 					},
 				)
 				mocks    = []*mok.Mock{wantConn.Mock, listener.Mock}
-				receiver = NewConnReceiver(ConnReceiverConf{}, listener, make(chan net.Conn, 1))
+				receiver = NewConnReceiver(listener, make(chan net.Conn, 1))
 			)
 			testConnReceiver(receiver, wantErr, mocks, t)
 		})
@@ -148,7 +152,7 @@ func TestConnReceiver(t *testing.T) {
 				)
 				conns    = make(chan net.Conn, 2)
 				mocks    = []*mok.Mock{conn1.Mock, conn2.Mock, listener.Mock}
-				receiver = NewConnReceiver(ConnReceiverConf{}, listener, conns)
+				receiver = NewConnReceiver(listener, conns)
 			)
 			go func() {
 				i := 0
@@ -234,7 +238,7 @@ func testStopWhileAccept(shutdown bool, t *testing.T) {
 		conns = make(chan net.Conn)
 		mocks = []*mok.Mock{listener.Mock}
 	)
-	receiver := NewConnReceiver(ConnReceiverConf{}, listener, conns)
+	receiver := NewConnReceiver(listener, conns)
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 		if shutdown {
@@ -272,7 +276,7 @@ func testStopWhileQueueConn(shutdown bool, t *testing.T) {
 		)
 		conns    = make(chan net.Conn)
 		mocks    = []*mok.Mock{conn.Mock, listener.Mock}
-		receiver = NewConnReceiver(ConnReceiverConf{}, listener, conns)
+		receiver = NewConnReceiver(listener, conns)
 	)
 	go func() {
 		time.Sleep(100 * time.Millisecond)

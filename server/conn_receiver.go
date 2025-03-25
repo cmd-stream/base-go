@@ -1,4 +1,4 @@
-package server
+package bser
 
 import (
 	"net"
@@ -15,29 +15,30 @@ const (
 )
 
 // NewConnReceiver creates a new ConnReceiver.
-func NewConnReceiver(conf ConnReceiverConf, listener base.Listener,
-	conns chan net.Conn) *ConnReceiver {
-	return &ConnReceiver{
-		conf:     conf,
+func NewConnReceiver(listener base.Listener, conns chan net.Conn,
+	ops ...SetConnReceiverOption) *ConnReceiver {
+	r := ConnReceiver{
 		listener: listener,
 		conns:    conns,
 		stopped:  make(chan struct{}),
 	}
+	ApplyForConnReceiver(ops, &r.options)
+	return &r
 }
 
 // ConnReceiver listens for incoming connections and adds them to the conns
 // channel.
 //
 // It can wait for the first connection for a specified duration, after which it
-// stops. ConnReceiver also implements the jointwork.Task interface, allowing it
-// to work in conjunction with Workers.
+// stops. ConnReceiver also implements the jointwork.Task interface, allowing
+// it to work in conjunction with Workers.
 type ConnReceiver struct {
-	conf     ConnReceiverConf
 	listener base.Listener
 	conns    chan net.Conn
 	state    int
 	stopped  chan struct{}
 	mu       sync.Mutex
+	options  ConnReceiverOptions
 }
 
 func (r *ConnReceiver) Run() (err error) {
@@ -62,13 +63,13 @@ func (r *ConnReceiver) Stop() (err error) {
 }
 
 func (r *ConnReceiver) acceptFirstConn() (err error) {
-	if r.conf.FirstConnTimeout != 0 {
+	if r.options.FirstConnTimeout != 0 {
 		defer func() {
 			if err == nil {
 				err = r.listener.SetDeadline(time.Time{})
 			}
 		}()
-		err = r.listener.SetDeadline(time.Now().Add(r.conf.FirstConnTimeout))
+		err = r.listener.SetDeadline(time.Now().Add(r.options.FirstConnTimeout))
 		if err != nil {
 			return err
 		}

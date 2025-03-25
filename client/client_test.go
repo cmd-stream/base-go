@@ -1,4 +1,4 @@
-package client
+package bcln
 
 import (
 	"errors"
@@ -138,7 +138,7 @@ func TestClient(t *testing.T) {
 					}
 					close(done)
 				}
-				client  = New[any](delegate, callback)
+				client  = New[any](delegate, WithUnexpectedResultCallback(callback))
 				results = make(chan base.AsyncResult, 1)
 			)
 			client.Send(wantCmd, results)

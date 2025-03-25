@@ -1,4 +1,4 @@
-package server
+package bser
 
 import (
 	"context"
@@ -20,8 +20,7 @@ func TestServer(t *testing.T) {
 	t.Run("Serving should fail if Conf.WorkersCount == 0", func(t *testing.T) {
 		var (
 			wantErr = ErrNoWorkers
-			conf    = Conf{WorkersCount: 0}
-			server  = &Server{Conf: conf}
+			server  = &Server{}
 			err     = server.Serve(nil)
 		)
 		if err != wantErr {
@@ -49,10 +48,6 @@ func TestServer(t *testing.T) {
 						return wantHandleErr
 					},
 				)
-				conf = Conf{
-					ConnReceiverConf: ConnReceiverConf{FirstConnTimeout: time.Second},
-					WorkersCount:     2,
-				}
 				callback LostConnCallback = func(addr net.Addr, err error) {
 					if err != wantHandleErr {
 						t.Errorf("unexpected error, want '%v' actual '%v'", ErrClosed, err)
@@ -80,7 +75,14 @@ func TestServer(t *testing.T) {
 				}()
 				mocks = []*mok.Mock{conn1.Mock, conn2.Mock, listener.Mock}
 			)
-			server, errs := MakeServerAndServe(conf, listener, delegate, callback)
+			server := New(delegate,
+				WithWorkersCount(2),
+				WithLostConnCallback(callback),
+				WithConnReceiver(
+					WithFirstConnTimeout(time.Second),
+				),
+			)
+			errs := MakeServerAndServe(server, listener)
 			wg.Wait()
 			if err := server.Close(); err != nil {
 				t.Fatal(err)
@@ -98,11 +100,9 @@ func TestServer(t *testing.T) {
 					wg.Add(2)
 					return wg
 				}()
-				addr = &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 9000}
-				conn = MakeConn(addr)
-				conf = Conf{
-					WorkersCount: 1,
-				}
+				addr = &net.TCPAddr{IP: net.ParseIP("127.0.0.1"),
+					Port: 9000}
+				conn                      = MakeConn(addr)
 				callback LostConnCallback = func(a net.Addr, err error) {
 					if a != addr {
 						t.Errorf("unexpected addr, want '%v' actual '%v'", addr, a)
@@ -136,7 +136,11 @@ func TestServer(t *testing.T) {
 				)
 				mocks = []*mok.Mock{listener.Mock}
 			)
-			server, errs := MakeServerAndServe(conf, listener, delegate, callback)
+			server := New(delegate,
+				WithWorkersCount(1),
+				WithLostConnCallback(callback),
+			)
+			errs := MakeServerAndServe(server, listener)
 			wg.Wait()
 			if err := server.Shutdown(); err != nil {
 				t.Fatal(err)
@@ -154,11 +158,8 @@ func TestServer(t *testing.T) {
 					wg.Add(2)
 					return wg
 				}()
-				addr = &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 9000}
-				conn = MakeConn(addr)
-				conf = Conf{
-					WorkersCount: 1,
-				}
+				addr                      = &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 9000}
+				conn                      = MakeConn(addr)
 				callback LostConnCallback = func(a net.Addr, err error) {
 					if a != addr {
 						t.Errorf("unexpected addr, want '%v' actual '%v'", addr, a)
@@ -192,7 +193,11 @@ func TestServer(t *testing.T) {
 				)
 				mocks = []*mok.Mock{listener.Mock}
 			)
-			server, errs := MakeServerAndServe(conf, listener, delegate, callback)
+			server := New(delegate,
+				WithWorkersCount(1),
+				WithLostConnCallback(callback),
+			)
+			errs := MakeServerAndServe(server, listener)
 			wg.Wait()
 			if err := server.Close(); err != nil {
 				t.Fatal(err)
@@ -204,7 +209,6 @@ func TestServer(t *testing.T) {
 		func(t *testing.T) {
 			var (
 				wantErr  = ErrShutdown
-				conf     = Conf{WorkersCount: 1}
 				listener = func() mock.Listener {
 					done := make(chan struct{})
 					listener := mock.NewListener().RegisterAccept(
@@ -224,7 +228,8 @@ func TestServer(t *testing.T) {
 				delegate = mock.NewServerDelegate()
 				mocks    = []*mok.Mock{listener.Mock, delegate.Mock}
 			)
-			server, errs := MakeServerAndServe(conf, listener, delegate, nil)
+			server := New(delegate, WithWorkersCount(1))
+			errs := MakeServerAndServe(server, listener)
 			time.Sleep(100 * time.Millisecond)
 			err := server.Shutdown()
 			if err != nil {
@@ -237,7 +242,6 @@ func TestServer(t *testing.T) {
 		func(t *testing.T) {
 			var (
 				wantErr  = ErrClosed
-				conf     = Conf{WorkersCount: 1}
 				listener = func() mock.Listener {
 					done := make(chan struct{})
 					listener := mock.NewListener().RegisterAccept(
@@ -257,7 +261,8 @@ func TestServer(t *testing.T) {
 				delegate = mock.NewServerDelegate()
 				mocks    = []*mok.Mock{listener.Mock, delegate.Mock}
 			)
-			server, errs := MakeServerAndServe(conf, listener, delegate, nil)
+			server := New(delegate, WithWorkersCount(1))
+			errs := MakeServerAndServe(server, listener)
 			time.Sleep(100 * time.Millisecond)
 			err := server.Close()
 			if err != nil {
@@ -270,8 +275,7 @@ func TestServer(t *testing.T) {
 		func(t *testing.T) {
 			var (
 				wantErr = ErrNotServing
-				conf    = Conf{WorkersCount: 1}
-				server  = &Server{Conf: conf}
+				server  = New(nil, WithWorkersCount(1))
 				err     = server.Shutdown()
 			)
 			if err != wantErr {
@@ -283,8 +287,7 @@ func TestServer(t *testing.T) {
 		func(t *testing.T) {
 			var (
 				wantErr = ErrNotServing
-				conf    = Conf{WorkersCount: 1}
-				server  = &Server{Conf: conf}
+				server  = New(nil, WithWorkersCount(1))
 				err     = server.Close()
 			)
 			if err != wantErr {
@@ -294,18 +297,14 @@ func TestServer(t *testing.T) {
 
 }
 
-func MakeServerAndServe(conf Conf, listener base.Listener,
-	delegate mock.ServerDelegate,
-	callback LostConnCallback,
-) (server *Server, errs <-chan error) {
-	server = &Server{Conf: conf, Delegate: delegate, Callback: callback}
+func MakeServerAndServe(server *Server, listener base.Listener) (errs <-chan error) {
 	ch := make(chan error, 1)
 	go func() {
 		err := server.Serve(listener)
 		ch <- err
 		close(ch)
 	}()
-	return server, ch
+	return ch
 }
 
 func MakeConn(addr net.Addr) mock.Conn {

@@ -2,6 +2,7 @@ package base
 
 import (
 	"context"
+	"net"
 	"time"
 )
 
@@ -16,19 +17,21 @@ type Seq int64
 //
 // Implementation of this interface must be thread-safe.
 type Proxy interface {
+	LocalAddr() net.Addr
+	RemoteAddr() net.Addr
 	Send(seq Seq, result Result) error
 	SendWithDeadline(deadline time.Time, seq Seq, result Result) error
 }
 
-// Cmd represents the general Command interface.
+// Cmd defines the general Command interface.
 //
-// Exec method is used by the Invoker on the server. Parameters:
+// The Exec method is invoked by the server's Invoker. It executes the Command
+// with the following parameters:
 //   - ctx: Execution context.
 //   - at: Timestamp when the server received the Command.
 //   - seq: Sequence number assigned to the Command.
-//   - receiver: The Receiver of type T.
-//   - proxy: Proxy of the server transport, used for sending Results back
-//     to the client.
+//   - receiver: An instance of type T that processes the Command.
+//   - proxy: A server transport proxy used to send Results back to the client.
 type Cmd[T any] interface {
 	Exec(ctx context.Context, at time.Time, seq Seq, receiver T, proxy Proxy) error
 }

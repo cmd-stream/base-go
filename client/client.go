@@ -1,4 +1,4 @@
-package client
+package bcln
 
 import (
 	"context"
@@ -16,46 +16,43 @@ const (
 	closed
 )
 
-// UnexpectedResultCallback is used to process unexpected Results received from
-// the server.
+// UnexpectedResultCallback processes unexpected Results received from the server.
 //
-// This is, when the sequence number of the Result does not match the sequence
+// It is invoked when the sequence number of a Result does not match the sequence
 // number of any Command sent by the client that is awaiting a Result.
 type UnexpectedResultCallback func(seq base.Seq, result base.Result)
 
-// New creates a new Client.
-//
-// The handler parameter may be nil.
-func New[T any](delegate base.ClientDelegate[T],
-	callback UnexpectedResultCallback) *Client[T] {
+// New creates a new client.
+func New[T any](delegate base.ClientDelegate[T], ops ...SetOption) *Client[T] {
 	var (
 		ctx, cancel        = context.WithCancel(context.Background())
 		flagFl      uint32 = 0
-		client             = Client[T]{
+		client             = &Client[T]{
 			cancel:   cancel,
 			delegate: delegate,
 			waiting:  make(map[base.Seq]chan<- base.AsyncResult),
-			callback: callback,
 			done:     make(chan struct{}),
 			flagFl:   &flagFl,
 			chFl:     make(chan error, 1),
 		}
 	)
+	Apply(ops, &client.options)
 	if keepaliveDelegate, ok := delegate.(base.ClientKeepaliveDelegate[T]); ok {
 		keepaliveDelegate.Keepalive(&client.muSn)
 	}
-	go receive[T](ctx, &client)
-	return &client
+	go receive[T](ctx, client)
+	return client
 }
 
 // Client represents a thread-safe, asynchronous cmd-stream client.
 //
-// It uses ClientDelegate for communication tasks such as sending Commands,
-// receiving Results, or managing deadlines. If the connection is lost,
-// the client will close, and Client.Err() will provide the connection error.
+// It utilizes ClientDelegate for communication tasks such as sending Commands,
+// receiving Results, and managing deadlines. If the connection is lost, the
+// client will close, and Client.Err() will return the corresponding connection
+// error.
 //
-// Client.Close() initiates the process of closing the client. You can track its
-// completion by checking Client.Done():
+// To close the client, use Client.Close(). You can track the completion of this
+// process by checking Client.Done():
 //
 //	err = client.Close()
 //	if err != nil {
@@ -73,7 +70,6 @@ type Client[T any] struct {
 	delegate base.ClientDelegate[T]
 	seq      base.Seq
 	waiting  map[base.Seq]chan<- base.AsyncResult
-	callback UnexpectedResultCallback
 	err      error
 	done     chan struct{}
 	flagFl   *uint32
@@ -82,18 +78,22 @@ type Client[T any] struct {
 	muWt     sync.Mutex
 	muEr     sync.Mutex
 	muSt     sync.Mutex
+	options  Options
 }
 
-// Send sends a Command.
+// Send transmits a Command to the server.
 //
-// It adds Results received from the server to the results channel. If
-// the channel is not large enough, retrieving results for all Commands may hang.
-// For each Command, generates a unique sequence number, starting with 1.
-// Thus, a Command with seq == 1 is sent first, with seq == 2 is sent second,
-// and so on. 0 is reserved for the Ping-Pong game, which keeps a connection
-// alive.
+// Received Results from the server are added to the results channel. If the
+// channel lacks sufficient capacity, retrieving results for all Commands may
+// hang.
 //
-// Returns the sequence number and an error != nil if the Command was not send.
+// Each Command is assigned a unique sequence number, starting from 1:
+//   - The first Command is sent with `seq == 1`, the second with `seq == 2`, etc.
+//   - `seq == 0` is reserved for the Ping-Pong mechanism, which maintains
+//     connection liveness.
+//
+// Returns the sequence number of the Command and any error encountered
+// (non-nil if the Command was not sent successfully).
 func (c *Client[T]) Send(cmd base.Cmd[T], results chan<- base.AsyncResult) (
 	seq base.Seq, err error) {
 	var chFl chan error
@@ -112,10 +112,11 @@ func (c *Client[T]) Send(cmd base.Cmd[T], results chan<- base.AsyncResult) (
 	return seq, c.flush(seq, chFl)
 }
 
-// SendWithDeadline sends a Command with a deadline.
+// SendWithDeadline sends a Command with a specified deadline.
 //
-// Use this method if you want to send a Command and specify the deadline.
-// In all other it performs like the Send method.
+// This method behaves like Send but allows setting a deadline for Command
+// execution. Use it when you need to enforce a time limit on the Command's
+// processing.
 func (c *Client[T]) SendWithDeadline(deadline time.Time, cmd base.Cmd[T],
 	results chan<- base.AsyncResult) (seq base.Seq, err error) {
 	var chFl chan error
@@ -205,8 +206,8 @@ func (c *Client[T]) receive(ctx context.Context) (err error) {
 		} else {
 			results, pst = c.load(seq)
 		}
-		if !pst && c.callback != nil {
-			c.callback(seq, result)
+		if !pst && c.options.UnexpectedResultCallback != nil {
+			c.options.UnexpectedResultCallback(seq, result)
 			continue
 		}
 		select {
