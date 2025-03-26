@@ -30,7 +30,7 @@ type Proxy interface {
 //   - ctx: Execution context.
 //   - at: Timestamp when the server received the Command.
 //   - seq: Sequence number assigned to the Command.
-//   - receiver: An instance of type T that processes the Command.
+//   - receiver: The Receiver of type T.
 //   - proxy: A server transport proxy used to send Results back to the client.
 type Cmd[T any] interface {
 	Exec(ctx context.Context, at time.Time, seq Seq, receiver T, proxy Proxy) error
