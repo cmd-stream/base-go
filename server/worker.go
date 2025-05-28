@@ -3,14 +3,11 @@ package bser
 import (
 	"context"
 	"net"
-
-	"github.com/cmd-stream/base-go"
 )
 
 // NewWorker creates a new Worker.
-func NewWorker(conns <-chan net.Conn, delegate base.ServerDelegate,
-	callback LostConnCallback,
-) Worker {
+func NewWorker(conns <-chan net.Conn, delegate Delegate,
+	callback LostConnCallback) Worker {
 	ctx, cancel := context.WithCancel(context.Background())
 	return Worker{ctx, cancel, conns, delegate, callback}
 }
@@ -27,7 +24,7 @@ type Worker struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
 	conns    <-chan net.Conn
-	delegate base.ServerDelegate
+	delegate Delegate
 	callback LostConnCallback
 }
 

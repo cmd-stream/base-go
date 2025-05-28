@@ -5,9 +5,7 @@ import (
 )
 
 func NewResult() Result {
-	return Result{
-		Mock: mok.New("Result"),
-	}
+	return Result{mok.New("Result")}
 }
 
 type Result struct {

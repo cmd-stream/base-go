@@ -7,42 +7,38 @@ import (
 	"github.com/ymz-ncnk/mok"
 )
 
+type AddrFn func() (addr net.Addr)
+type AcceptFn func() (conn net.Conn, err error)
+
 func NewListener() Listener {
-	return Listener{
-		Mock: mok.New("Listener"),
-	}
+	return Listener{mok.New("Listener")}
 }
 
 type Listener struct {
 	*mok.Mock
 }
 
-func (m Listener) RegisterAddr(
-	fn func() (addr net.Addr)) Listener {
+func (m Listener) RegisterAddr(fn AddrFn) Listener {
 	m.Register("Addr", fn)
 	return m
 }
 
-func (m Listener) RegisterSetDeadline(
-	fn func(deadline time.Time) (err error)) Listener {
+func (m Listener) RegisterSetDeadline(fn SetDeadlineFn) Listener {
 	m.Register("SetDeadline", fn)
 	return m
 }
 
-func (m Listener) RegisterNSetDeadline(n int,
-	fn func(deadline time.Time) (err error)) Listener {
+func (m Listener) RegisterNSetDeadline(n int, fn SetDeadlineFn) Listener {
 	m.RegisterN("SetDeadline", n, fn)
 	return m
 }
 
-func (m Listener) RegisterAccept(
-	fn func() (conn net.Conn, err error)) Listener {
+func (m Listener) RegisterAccept(fn AcceptFn) Listener {
 	m.Register("Accept", fn)
 	return m
 }
 
-func (m Listener) RegisterClose(
-	fn func() (err error)) Listener {
+func (m Listener) RegisterClose(fn CloseFn) Listener {
 	m.Register("Close", fn)
 	return m
 }

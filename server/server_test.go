@@ -9,11 +9,12 @@ import (
 	"time"
 
 	"github.com/cmd-stream/base-go"
+	bsmock "github.com/cmd-stream/base-go/server/testdata/mock"
 	"github.com/cmd-stream/base-go/testdata/mock"
+	asserterror "github.com/ymz-ncnk/assert/error"
+	assertfatal "github.com/ymz-ncnk/assert/fatal"
 	"github.com/ymz-ncnk/mok"
 )
-
-const Delta = 100 * time.Millisecond
 
 func TestServer(t *testing.T) {
 
@@ -23,9 +24,7 @@ func TestServer(t *testing.T) {
 			server  = &Server{}
 			err     = server.Serve(nil)
 		)
-		if err != wantErr {
-			t.Errorf("unexpected error, want '%v' actual '%v'", wantErr, err)
-		}
+		asserterror.EqualError(err, wantErr, t)
 	})
 
 	t.Run("Server should be able to handle several connections",
@@ -39,19 +38,17 @@ func TestServer(t *testing.T) {
 					return wg
 				}()
 				addr1    = &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 9900}
-				conn1    = MakeConn(addr1)
+				conn1    = makeConn(addr1)
 				addr2    = &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 9900}
-				conn2    = MakeConn(addr2)
-				delegate = mock.NewServerDelegate().RegisterNHandle(2,
+				conn2    = makeConn(addr2)
+				delegate = bsmock.NewDelegate().RegisterNHandle(2,
 					func(ctx context.Context, conn net.Conn) (err error) {
 						// TODO
 						return wantHandleErr
 					},
 				)
 				callback LostConnCallback = func(addr net.Addr, err error) {
-					if err != wantHandleErr {
-						t.Errorf("unexpected error, want '%v' actual '%v'", ErrClosed, err)
-					}
+					asserterror.EqualError(err, wantHandleErr, t)
 					wg.Done()
 				}
 				listenerErr = errors.New("listener closed")
@@ -71,7 +68,6 @@ func TestServer(t *testing.T) {
 					).RegisterClose(
 						func() error { close(done); return nil },
 					)
-					// .RegisterClose(func() (err error) { return nil })
 				}()
 				mocks = []*mok.Mock{conn1.Mock, conn2.Mock, listener.Mock}
 			)
@@ -82,7 +78,8 @@ func TestServer(t *testing.T) {
 					WithFirstConnTimeout(time.Second),
 				),
 			)
-			errs := MakeServerAndServe(server, listener)
+			errs := startServer(server, listener)
+
 			wg.Wait()
 			if err := server.Close(); err != nil {
 				t.Fatal(err)
@@ -102,16 +99,12 @@ func TestServer(t *testing.T) {
 				}()
 				addr = &net.TCPAddr{IP: net.ParseIP("127.0.0.1"),
 					Port: 9000}
-				conn                      = MakeConn(addr)
+				conn                      = makeConn(addr)
 				callback LostConnCallback = func(a net.Addr, err error) {
 					if a != addr {
 						t.Errorf("unexpected addr, want '%v' actual '%v'", addr, a)
 					}
-					if err != wantLostConnErr {
-						t.Errorf("unexpected err, want '%v' actual '%v'",
-							wantLostConnErr,
-							err)
-					}
+					asserterror.EqualError(err, wantLostConnErr, t)
 				}
 				listener = func() mock.Listener {
 					listenerDone := make(chan struct{})
@@ -127,7 +120,7 @@ func TestServer(t *testing.T) {
 						func() error { close(listenerDone); return nil },
 					)
 				}()
-				delegate = mock.NewServerDelegate().RegisterHandle(
+				delegate = bsmock.NewDelegate().RegisterHandle(
 					func(ctx context.Context, conn net.Conn) (err error) {
 						wg.Done()
 						time.Sleep(100 * time.Millisecond)
@@ -140,11 +133,12 @@ func TestServer(t *testing.T) {
 				WithWorkersCount(1),
 				WithLostConnCallback(callback),
 			)
-			errs := MakeServerAndServe(server, listener)
+			errs := startServer(server, listener)
+
 			wg.Wait()
-			if err := server.Shutdown(); err != nil {
-				t.Fatal(err)
-			}
+			err := server.Shutdown()
+			assertfatal.EqualError(err, nil, t)
+
 			testAsyncErr(wantErr, errs, mocks, t)
 		})
 
@@ -159,7 +153,7 @@ func TestServer(t *testing.T) {
 					return wg
 				}()
 				addr                      = &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 9000}
-				conn                      = MakeConn(addr)
+				conn                      = makeConn(addr)
 				callback LostConnCallback = func(a net.Addr, err error) {
 					if a != addr {
 						t.Errorf("unexpected addr, want '%v' actual '%v'", addr, a)
@@ -184,7 +178,7 @@ func TestServer(t *testing.T) {
 						func() error { close(listenerDone); return nil },
 					)
 				}()
-				delegate = mock.NewServerDelegate().RegisterHandle(
+				delegate = bsmock.NewDelegate().RegisterHandle(
 					func(ctx context.Context, conn net.Conn) (err error) {
 						wg.Done()
 						<-ctx.Done()
@@ -197,11 +191,12 @@ func TestServer(t *testing.T) {
 				WithWorkersCount(1),
 				WithLostConnCallback(callback),
 			)
-			errs := MakeServerAndServe(server, listener)
+			errs := startServer(server, listener)
+
 			wg.Wait()
-			if err := server.Close(); err != nil {
-				t.Fatal(err)
-			}
+			err := server.Close()
+			assertfatal.EqualError(err, nil, t)
+
 			testAsyncErr(wantErr, errs, mocks, t)
 		})
 
@@ -225,16 +220,16 @@ func TestServer(t *testing.T) {
 					)
 					return listener
 				}()
-				delegate = mock.NewServerDelegate()
+				delegate = bsmock.NewDelegate()
 				mocks    = []*mok.Mock{listener.Mock, delegate.Mock}
 			)
 			server := New(delegate, WithWorkersCount(1))
-			errs := MakeServerAndServe(server, listener)
+			errs := startServer(server, listener)
+
 			time.Sleep(100 * time.Millisecond)
 			err := server.Shutdown()
-			if err != nil {
-				t.Fatal(err)
-			}
+			assertfatal.EqualError(err, nil, t)
+
 			testAsyncErr(wantErr, errs, mocks, t)
 		})
 
@@ -258,16 +253,16 @@ func TestServer(t *testing.T) {
 					)
 					return listener
 				}()
-				delegate = mock.NewServerDelegate()
+				delegate = bsmock.NewDelegate()
 				mocks    = []*mok.Mock{listener.Mock, delegate.Mock}
 			)
 			server := New(delegate, WithWorkersCount(1))
-			errs := MakeServerAndServe(server, listener)
+			errs := startServer(server, listener)
+
 			time.Sleep(100 * time.Millisecond)
 			err := server.Close()
-			if err != nil {
-				t.Fatal(err)
-			}
+			assertfatal.EqualError(err, nil, t)
+
 			testAsyncErr(wantErr, errs, mocks, t)
 		})
 
@@ -278,9 +273,7 @@ func TestServer(t *testing.T) {
 				server  = New(nil, WithWorkersCount(1))
 				err     = server.Shutdown()
 			)
-			if err != wantErr {
-				t.Errorf("unexpected err, want '%v' actual '%v'", wantErr, err)
-			}
+			assertfatal.EqualError(err, wantErr, t)
 		})
 
 	t.Run("Close should fail with an error, if server is not serving",
@@ -290,14 +283,13 @@ func TestServer(t *testing.T) {
 				server  = New(nil, WithWorkersCount(1))
 				err     = server.Close()
 			)
-			if err != wantErr {
-				t.Errorf("unexpected err, want '%v' actual '%v'", wantErr, err)
-			}
+			assertfatal.EqualError(err, wantErr, t)
 		})
 
 }
 
-func MakeServerAndServe(server *Server, listener base.Listener) (errs <-chan error) {
+func startServer(server *Server, listener base.Listener) (
+	errs <-chan error) {
 	ch := make(chan error, 1)
 	go func() {
 		err := server.Serve(listener)
@@ -307,14 +299,8 @@ func MakeServerAndServe(server *Server, listener base.Listener) (errs <-chan err
 	return ch
 }
 
-func MakeConn(addr net.Addr) mock.Conn {
-	return mock.NewConn().RegisterRemoteAddr(
-		func() net.Addr { return addr },
-	)
-}
-
-func SameTime(t1, t2 time.Time) bool {
-	return !(t1.Before(t2.Truncate(Delta)) || t1.After(t2.Add(Delta)))
+func makeConn(addr net.Addr) mock.Conn {
+	return mock.NewConn().RegisterRemoteAddr(func() net.Addr { return addr })
 }
 
 func testAsyncErr(wantErr error, errs <-chan error, mocks []*mok.Mock,
@@ -327,7 +313,5 @@ func testAsyncErr(wantErr error, errs <-chan error, mocks []*mok.Mock,
 			t.Errorf("unexpected error, want '%v' actual '%v'", wantErr, err)
 		}
 	}
-	if infomap := mok.CheckCalls(mocks); len(infomap) > 0 {
-		t.Error(infomap)
-	}
+	asserterror.EqualDeep(mok.CheckCalls(mocks), mok.EmptyInfomap, t)
 }

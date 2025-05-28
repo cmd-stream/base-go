@@ -23,7 +23,7 @@ const (
 type UnexpectedResultCallback func(seq base.Seq, result base.Result)
 
 // New creates a new client.
-func New[T any](delegate base.ClientDelegate[T], ops ...SetOption) *Client[T] {
+func New[T any](delegate Delegate[T], ops ...SetOption) *Client[T] {
 	var (
 		ctx, cancel        = context.WithCancel(context.Background())
 		flagFl      uint32 = 0
@@ -37,10 +37,10 @@ func New[T any](delegate base.ClientDelegate[T], ops ...SetOption) *Client[T] {
 		}
 	)
 	Apply(ops, &client.options)
-	if keepaliveDelegate, ok := delegate.(base.ClientKeepaliveDelegate[T]); ok {
+	if keepaliveDelegate, ok := delegate.(KeepaliveDelegate[T]); ok {
 		keepaliveDelegate.Keepalive(&client.muSn)
 	}
-	go receive[T](ctx, client)
+	go receive(ctx, client)
 	return client
 }
 
@@ -67,7 +67,7 @@ func New[T any](delegate base.ClientDelegate[T], ops ...SetOption) *Client[T] {
 type Client[T any] struct {
 	cancel   context.CancelFunc
 	state    int
-	delegate base.ClientDelegate[T]
+	delegate Delegate[T]
 	seq      base.Seq
 	waiting  map[base.Seq]chan<- base.AsyncResult
 	err      error
@@ -95,21 +95,21 @@ type Client[T any] struct {
 // Returns the sequence number of the Command and any error encountered
 // (non-nil if the Command was not sent successfully).
 func (c *Client[T]) Send(cmd base.Cmd[T], results chan<- base.AsyncResult) (
-	seq base.Seq, err error) {
+	seq base.Seq, n int, err error) {
 	var chFl chan error
 	c.muSn.Lock()
 	chFl = c.chFl
 	c.seq++
 	seq = c.seq
 	c.memorize(seq, results)
-	err = c.delegate.Send(seq, cmd)
+	n, err = c.delegate.Send(seq, cmd)
 	if err != nil {
 		c.muSn.Unlock()
 		c.Forget(seq)
 		return
 	}
 	c.muSn.Unlock()
-	return seq, c.flush(seq, chFl)
+	return seq, n, c.flush(seq, chFl)
 }
 
 // SendWithDeadline sends a Command with a specified deadline.
@@ -117,8 +117,10 @@ func (c *Client[T]) Send(cmd base.Cmd[T], results chan<- base.AsyncResult) (
 // This method behaves like Send but allows setting a deadline for Command
 // execution. Use it when you need to enforce a time limit on the Command's
 // processing.
-func (c *Client[T]) SendWithDeadline(deadline time.Time, cmd base.Cmd[T],
-	results chan<- base.AsyncResult) (seq base.Seq, err error) {
+func (c *Client[T]) SendWithDeadline(cmd base.Cmd[T],
+	results chan<- base.AsyncResult,
+	deadline time.Time,
+) (seq base.Seq, n int, err error) {
 	var chFl chan error
 	c.muSn.Lock()
 	chFl = c.chFl
@@ -131,14 +133,14 @@ func (c *Client[T]) SendWithDeadline(deadline time.Time, cmd base.Cmd[T],
 		c.Forget(seq)
 		return
 	}
-	err = c.delegate.Send(seq, cmd)
+	n, err = c.delegate.Send(seq, cmd)
 	if err != nil {
 		c.muSn.Unlock()
 		c.Forget(seq)
 		return
 	}
 	c.muSn.Unlock()
-	return seq, c.flush(seq, chFl)
+	return seq, n, c.flush(seq, chFl)
 }
 
 // Has checks if the Command with the specified sequence number has been sent
@@ -193,11 +195,12 @@ func (c *Client[T]) receive(ctx context.Context) (err error) {
 	var (
 		seq     base.Seq
 		result  base.Result
+		n       int
 		results chan<- base.AsyncResult
 		pst     bool
 	)
 	for {
-		seq, result, err = c.delegate.Receive()
+		seq, result, n, err = c.delegate.Receive()
 		if err != nil {
 			return
 		}
@@ -213,7 +216,7 @@ func (c *Client[T]) receive(ctx context.Context) (err error) {
 		select {
 		case <-ctx.Done():
 			return context.Canceled
-		case results <- base.AsyncResult{Seq: seq, Result: result}:
+		case results <- base.AsyncResult{Seq: seq, BytesRead: n, Result: result}:
 			continue
 		}
 	}
@@ -331,7 +334,7 @@ Start:
 	if err != nil {
 		err = client.correctErr(err)
 		if netError(err) || err == io.EOF { // TODO Test EOF.
-			if reconnectDelegate, ok := client.delegate.(base.ClientReconnectDelegate[T]); ok {
+			if reconnectDelegate, ok := client.delegate.(ReconnectDelegate[T]); ok {
 				if err = reconnectDelegate.Reconnect(); err == nil {
 					goto Start
 				}

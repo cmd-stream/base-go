@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	bsmock "github.com/cmd-stream/base-go/server/testdata/mock"
 	"github.com/cmd-stream/base-go/testdata/mock"
 	"github.com/ymz-ncnk/mok"
 )
@@ -20,9 +21,9 @@ func TestWorker(t *testing.T) {
 			var (
 				wantErr  = errors.New("handle conn failed")
 				wg       = &sync.WaitGroup{}
-				conn1    = MakeConn(addr)
-				conn2    = MakeConn(addr)
-				delegate = mock.NewServerDelegate().RegisterHandle(
+				conn1    = makeConn(addr)
+				conn2    = makeConn(addr)
+				delegate = bsmock.NewDelegate().RegisterHandle(
 					func(ctx context.Context, conn net.Conn) (err error) {
 						if conn != conn1 {
 							t.Errorf("unexpected conn, want '%v' actual '%v'", conn1, conn)
@@ -54,7 +55,7 @@ func TestWorker(t *testing.T) {
 				wg       = &sync.WaitGroup{}
 				conn1    = mock.NewConn()
 				conn2    = mock.NewConn()
-				delegate = mock.NewServerDelegate().RegisterHandle(
+				delegate = bsmock.NewDelegate().RegisterHandle(
 					func(ctx context.Context, conn net.Conn) (err error) {
 						defer wg.Done()
 						if conn != conn1 {
@@ -83,8 +84,8 @@ func TestWorker(t *testing.T) {
 	// 	// 	var (
 	// 	// 		wantErr  = errors.New("handle conn failed")
 	// 	// 		wg       = &sync.WaitGroup{}
-	// 	// 		conn1    = MakeConn(addr)
-	// 	// 		conn2    = MakeConn(addr)
+	// 	// 		conn1    = makeConn(addr)
+	// 	// 		conn2    = makeConn(addr)
 	// 	// 		delegate = mock.NewServerDelegate().RegisterHandle(
 	// 	// 			func(ctx context.Context, conn net.Conn) (err error) {
 	// 	// 				if conn != conn1 {
@@ -142,11 +143,11 @@ func TestWorker(t *testing.T) {
 		var (
 			wantErr  = ErrClosed
 			conns    = make(chan net.Conn)
-			delegate = mock.NewServerDelegate()
+			delegate = bsmock.NewDelegate()
 			mocks    = []*mok.Mock{delegate.Mock}
 			worker   = NewWorker(conns, delegate, nil)
 		)
-		errs := RunWorker(worker)
+		errs := runWorker(worker)
 		if err := worker.Stop(); err != nil {
 			t.Fatal(err)
 		}
@@ -157,18 +158,18 @@ func TestWorker(t *testing.T) {
 		var (
 			wantErr  error = nil
 			conns          = make(chan net.Conn)
-			delegate       = mock.NewServerDelegate()
+			delegate       = bsmock.NewDelegate()
 			mocks          = []*mok.Mock{delegate.Mock}
 			worker         = NewWorker(conns, delegate, nil)
 		)
-		errs := RunWorker(worker)
+		errs := runWorker(worker)
 		close(conns)
 		testAsyncErr(wantErr, errs, mocks, t)
 	})
 
 }
 
-func RunWorker(worker Worker) (errs chan error) {
+func runWorker(worker Worker) (errs chan error) {
 	errs = make(chan error, 1)
 	go func() {
 		err := worker.Run()
@@ -178,7 +179,7 @@ func RunWorker(worker Worker) (errs chan error) {
 	return errs
 }
 
-func testWorker(delegate mock.ServerDelegate, conn1, conn2 mock.Conn,
+func testWorker(delegate bsmock.Delegate, conn1, conn2 mock.Conn,
 	lostConnCallback LostConnCallback,
 	wg *sync.WaitGroup,
 	t *testing.T,
@@ -187,7 +188,7 @@ func testWorker(delegate mock.ServerDelegate, conn1, conn2 mock.Conn,
 		conns  = make(chan net.Conn)
 		worker = NewWorker(conns, delegate, lostConnCallback)
 		mocks  = []*mok.Mock{conn1.Mock, conn2.Mock, delegate.Mock}
-		errs   = RunWorker(worker)
+		errs   = runWorker(worker)
 	)
 
 	wg.Add(2)

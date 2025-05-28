@@ -7,73 +7,70 @@ import (
 	"github.com/ymz-ncnk/mok"
 )
 
+type LocalAddrFn func() (addr net.Addr)
+type RemoteAddrFn func() (addr net.Addr)
+type SetDeadlineFn func(deadline time.Time) (err error)
+type SetReadDeadlineFn func(deadline time.Time) (err error)
+type SetWriteDeadlineFn func(deadline time.Time) (err error)
+type WriteFn func(b []byte) (n int, err error)
+type ReadFn func(b []byte) (n int, err error)
+type CloseFn func() (err error)
+
 // NewConn creates a new Conn.
 func NewConn() Conn {
-	return Conn{
-		Mock: mok.New("Conn"),
-	}
+	return Conn{mok.New("Conn")}
 }
 
 type Conn struct {
 	*mok.Mock
 }
 
-func (m Conn) RegisterLocalAddr(
-	fn func() (addr net.Addr)) Conn {
+func (m Conn) RegisterLocalAddr(fn LocalAddrFn) Conn {
 	m.Register("LocalAddr", fn)
 	return m
 }
 
-func (m Conn) RegisterNRead(n int,
-	fn func(b []byte) (n int, err error)) Conn {
-	m.RegisterN("Read", n, fn)
-	return m
-}
-
-func (m Conn) RegisterRead(
-	fn func(b []byte) (n int, err error)) Conn {
+func (m Conn) RegisterRead(fn ReadFn) Conn {
 	m.Register("Read", fn)
 	return m
 }
 
-func (m Conn) RegisterRemoteAddr(
-	fn func() (addr net.Addr)) Conn {
+func (m Conn) RegisterNRead(n int, fn ReadFn) Conn {
+	m.RegisterN("Read", n, fn)
+	return m
+}
+
+func (m Conn) RegisterRemoteAddr(fn RemoteAddrFn) Conn {
 	m.Register("RemoteAddr", fn)
 	return m
 }
 
-func (m Conn) RegisterSetDeadline(
-	fn func(deadline time.Time) (err error)) Conn {
+func (m Conn) RegisterSetDeadline(fn SetDeadlineFn) Conn {
 	m.Register("SetDeadline", fn)
 	return m
 }
 
-func (m Conn) RegisterNSetReadDeadline(n int,
-	fn func(deadline time.Time) (err error)) Conn {
+func (m Conn) RegisterNSetReadDeadline(n int, fn SetReadDeadlineFn) Conn {
 	m.RegisterN("SetReadDeadline", n, fn)
 	return m
 }
 
-func (m Conn) RegisterSetReadDeadline(
-	fn func(deadline time.Time) (err error)) Conn {
+func (m Conn) RegisterSetReadDeadline(fn SetReadDeadlineFn) Conn {
 	m.Register("SetReadDeadline", fn)
 	return m
 }
 
-func (m Conn) RegisterSetWriteDeadline(
-	fn func(deadline time.Time) (err error)) Conn {
+func (m Conn) RegisterSetWriteDeadline(fn SetWriteDeadlineFn) Conn {
 	m.Register("SetWriteDeadline", fn)
 	return m
 }
 
-func (m Conn) RegisterWrite(
-	fn func(b []byte) (n int, err error)) Conn {
+func (m Conn) RegisterWrite(fn WriteFn) Conn {
 	m.Register("Write", fn)
 	return m
 }
 
-func (m Conn) RegisterClose(
-	fn func() (err error)) Conn {
+func (m Conn) RegisterClose(fn CloseFn) Conn {
 	m.Register("Close", fn)
 	return m
 }

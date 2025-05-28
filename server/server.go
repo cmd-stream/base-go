@@ -15,7 +15,7 @@ const WorkersCount = 8
 type LostConnCallback = func(addr net.Addr, err error)
 
 // New creates a new server.
-func New(delegate base.ServerDelegate, ops ...SetOption) (s *Server) {
+func New(delegate Delegate, ops ...SetOption) (s *Server) {
 	s = &Server{delegate: delegate, options: Options{WorkersCount: WorkersCount}}
 	Apply(ops, &s.options)
 	return
@@ -26,7 +26,7 @@ func New(delegate base.ServerDelegate, ops ...SetOption) (s *Server) {
 // It utilizes a configurable number of Workers to manage client connections
 // using a specified ServerDelegate.
 type Server struct {
-	delegate base.ServerDelegate
+	delegate Delegate
 	receiver *ConnReceiver
 	mu       sync.Mutex
 	options  Options
@@ -84,7 +84,7 @@ func (s *Server) setReceiver(listener base.Listener, conns chan net.Conn) {
 	s.mu.Unlock()
 }
 
-func (s *Server) makeTasks(conns chan net.Conn, delegate base.ServerDelegate) (
+func (s *Server) makeTasks(conns chan net.Conn, delegate Delegate) (
 	tasks []jointwork.Task) {
 	tasks = make([]jointwork.Task, 1+s.options.WorkersCount)
 	tasks[0] = s.receiver

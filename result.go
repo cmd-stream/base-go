@@ -12,7 +12,8 @@ type Result interface {
 // Seq is the sequence number of the Command, Error != nil if something went
 // wrong with the connection.
 type AsyncResult struct {
-	Seq    Seq
-	Result Result
-	Error  error
+	Seq       Seq
+	BytesRead int
+	Result    Result
+	Error     error
 }

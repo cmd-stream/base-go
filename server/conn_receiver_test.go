@@ -2,16 +2,19 @@ package bser
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"testing"
 	"time"
 
 	"github.com/cmd-stream/base-go/testdata/mock"
 	"github.com/ymz-ncnk/mok"
+
+	asserterror "github.com/ymz-ncnk/assert/error"
 )
 
 func TestConnReceiver(t *testing.T) {
+
+	var delta = 100 * time.Millisecond
 
 	t.Run("Conf.FirstConnTimeout should be applied only to the first conn + if Listener.SetDeadline failed with an error, Run should return it",
 		func(t *testing.T) {
@@ -22,11 +25,7 @@ func TestConnReceiver(t *testing.T) {
 				listener             = mock.NewListener().RegisterSetDeadline(
 					func(deadline time.Time) (err error) {
 						wantDeadline := startTime.Add(wantFirstConnTimeout)
-						if !SameTime(deadline, wantDeadline) {
-							return fmt.Errorf("unexpected deadline, want '%v' actual '%v'",
-								wantDeadline,
-								deadline)
-						}
+						asserterror.SameTime(deadline, wantDeadline, delta, t)
 						return wantErr
 					},
 				)
@@ -35,7 +34,8 @@ func TestConnReceiver(t *testing.T) {
 					WithFirstConnTimeout(wantFirstConnTimeout),
 				)
 			)
-			testConnReceiver(receiver, wantErr, mocks, t)
+			errs := runConnReceiver(receiver)
+			testAsyncErr(wantErr, errs, mocks, t)
 		})
 
 	t.Run("If accepting of the first conn failed with an error, Run should return it",
@@ -49,7 +49,8 @@ func TestConnReceiver(t *testing.T) {
 				mocks    = []*mok.Mock{listener.Mock}
 				receiver = NewConnReceiver(listener, conns)
 			)
-			testConnReceiver(receiver, wantErr, mocks, t)
+			errs := runConnReceiver(receiver)
+			testAsyncErr(wantErr, errs, mocks, t)
 		})
 
 	t.Run("Conf.FirstConnTimeout should be applied to only first conn + if cancelation of the first conn deadline failed with an error, Run should return it",
@@ -64,11 +65,7 @@ func TestConnReceiver(t *testing.T) {
 				listener             = mock.NewListener().RegisterSetDeadline(
 					func(deadline time.Time) (err error) {
 						wantDeadline := startTime.Add(wantFirstConnTimeout)
-						if !SameTime(deadline, wantDeadline) {
-							return fmt.Errorf("unexpected deadline, want '%v' actual '%v'",
-								wantDeadline,
-								deadline)
-						}
+						asserterror.SameTime(deadline, wantDeadline, delta, t)
 						return
 					},
 				).RegisterAccept(
@@ -77,11 +74,7 @@ func TestConnReceiver(t *testing.T) {
 					},
 				).RegisterSetDeadline(
 					func(deadline time.Time) (err error) {
-						if !deadline.IsZero() {
-							return fmt.Errorf("unexpected deadline, want '%v' actual '%v'",
-								time.Time{},
-								deadline)
-						}
+						asserterror.Equal(deadline.IsZero(), true, t)
 						return wantErr
 					},
 				)
@@ -90,14 +83,14 @@ func TestConnReceiver(t *testing.T) {
 					WithFirstConnTimeout(wantFirstConnTimeout),
 				)
 			)
-			testConnReceiver(receiver, wantErr, mocks, t)
+			errs := runConnReceiver(receiver)
+			testAsyncErr(wantErr, errs, mocks, t)
 		})
 
 	t.Run("If Listener.Accept for the first conn failed with an error, Run should return it",
 		func(t *testing.T) {
 			var (
-				wantErr = errors.New("set deadline error")
-
+				wantErr  = errors.New("set deadline error")
 				listener = mock.NewListener().RegisterAccept(
 					func() (conn net.Conn, err error) {
 						return nil, wantErr
@@ -106,7 +99,8 @@ func TestConnReceiver(t *testing.T) {
 				mocks    = []*mok.Mock{listener.Mock}
 				receiver = NewConnReceiver(listener, make(chan net.Conn, 1))
 			)
-			testConnReceiver(receiver, wantErr, mocks, t)
+			errs := runConnReceiver(receiver)
+			testAsyncErr(wantErr, errs, mocks, t)
 		})
 
 	t.Run("If Listener.Accept for the second conn failed with an error, Run should return it",
@@ -128,13 +122,13 @@ func TestConnReceiver(t *testing.T) {
 				mocks    = []*mok.Mock{wantConn.Mock, listener.Mock}
 				receiver = NewConnReceiver(listener, make(chan net.Conn, 1))
 			)
-			testConnReceiver(receiver, wantErr, mocks, t)
+			errs := runConnReceiver(receiver)
+			testAsyncErr(wantErr, errs, mocks, t)
 		})
 
 	t.Run("ConnReceiver should be able to accept several connections",
 		func(t *testing.T) {
 			var (
-				// wantErr  = errors.New("done")
 				done     = make(chan struct{})
 				conn1    = mock.NewConn()
 				conn2    = mock.NewConn()
@@ -172,7 +166,8 @@ func TestConnReceiver(t *testing.T) {
 					t.Error(err)
 				}
 			}()
-			testConnReceiver(receiver, ErrClosed, mocks, t)
+			errs := runConnReceiver(receiver)
+			testAsyncErr(ErrClosed, errs, mocks, t)
 		})
 
 	t.Run("We should be able to close the ConnHandler while Listener.Accept",
@@ -197,7 +192,7 @@ func TestConnReceiver(t *testing.T) {
 
 }
 
-func RunConnReceiver(r *ConnReceiver) (errs chan error) {
+func runConnReceiver(r *ConnReceiver) (errs chan error) {
 	errs = make(chan error, 1)
 	go func() {
 		if err := r.Run(); err != nil {
@@ -208,14 +203,7 @@ func RunConnReceiver(r *ConnReceiver) (errs chan error) {
 	return
 }
 
-func testConnReceiver(r *ConnReceiver, wantErr error, mocks []*mok.Mock,
-	t *testing.T) {
-	errs := RunConnReceiver(r)
-	testAsyncErr(wantErr, errs, mocks, t)
-}
-
 func testStopWhileAccept(shutdown bool, t *testing.T) {
-	// wantErr := errors.New("accept failed, cause close")
 	wantErr := ErrClosed
 	if shutdown {
 		wantErr = nil
@@ -247,7 +235,8 @@ func testStopWhileAccept(shutdown bool, t *testing.T) {
 			receiver.Stop()
 		}
 	}()
-	testConnReceiver(receiver, wantErr, mocks, t)
+	errs := runConnReceiver(receiver)
+	testAsyncErr(wantErr, errs, mocks, t)
 	_, more := <-conns
 	if more {
 		t.Error("conns chan is not closed")
@@ -286,9 +275,8 @@ func testStopWhileQueueConn(shutdown bool, t *testing.T) {
 			receiver.Stop()
 		}
 	}()
-	testConnReceiver(receiver, wantErr, mocks, t)
+	errs := runConnReceiver(receiver)
+	testAsyncErr(wantErr, errs, mocks, t)
 	_, more := <-conns
-	if more {
-		t.Error("conns chan is not closed")
-	}
+	asserterror.Equal(more, false, t)
 }
