@@ -1,4 +1,4 @@
-package bser
+package bsrv
 
 import "errors"
 
