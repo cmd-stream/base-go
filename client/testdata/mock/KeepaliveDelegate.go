@@ -1,4 +1,4 @@
-package bcmock
+package mock
 
 import (
 	"sync"

@@ -1,7 +1,7 @@
 # base-go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/cmd-stream/base-go.svg)](https://pkg.go.dev/github.com/cmd-stream/base-go)
-[![GoReportCard](https://goreportcard.com/badge/cmd-stream/base-go)](https://goreportcard.com/report/github.com/cmd-stream/base-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/cmd-stream/core-go.svg)](https://pkg.go.dev/github.com/cmd-stream/core-go)
+[![GoReportCard](https://goreportcard.com/badge/cmd-stream/base-go)](https://goreportcard.com/report/github.com/cmd-stream/core-go)
 [![codecov](https://codecov.io/gh/cmd-stream/base-go/graph/badge.svg?token=RXPJ6ZIPK7)](https://codecov.io/gh/cmd-stream/base-go)
 
 base-go contains the definitions for both the client and the server.

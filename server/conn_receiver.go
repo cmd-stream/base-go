@@ -1,11 +1,11 @@
-package bsrv
+package csrv
 
 import (
 	"net"
 	"sync"
 	"time"
 
-	"github.com/cmd-stream/base-go"
+	"github.com/cmd-stream/core-go"
 )
 
 const (
@@ -15,7 +15,7 @@ const (
 )
 
 // NewConnReceiver creates a new ConnReceiver.
-func NewConnReceiver(listener base.Listener, conns chan net.Conn,
+func NewConnReceiver(listener core.Listener, conns chan net.Conn,
 	ops ...SetConnReceiverOption) *ConnReceiver {
 	r := ConnReceiver{
 		listener: listener,
@@ -33,7 +33,7 @@ func NewConnReceiver(listener base.Listener, conns chan net.Conn,
 // stops. ConnReceiver also implements the jointwork.Task interface, allowing
 // it to work in conjunction with Workers.
 type ConnReceiver struct {
-	listener base.Listener
+	listener core.Listener
 	conns    chan net.Conn
 	state    int
 	stopped  chan struct{}

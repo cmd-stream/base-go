@@ -1,4 +1,4 @@
-package bsrv
+package csrv
 
 import (
 	"net"

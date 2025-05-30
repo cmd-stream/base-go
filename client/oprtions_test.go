@@ -1,9 +1,9 @@
-package bcln
+package ccln
 
 import (
 	"testing"
 
-	"github.com/cmd-stream/base-go"
+	base "github.com/cmd-stream/core-go"
 )
 
 func TestOptions(t *testing.T) {

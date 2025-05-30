@@ -1,10 +1,10 @@
-package bcmock
+package mock
 
 import (
 	"net"
 	"time"
 
-	"github.com/cmd-stream/base-go"
+	"github.com/cmd-stream/core-go"
 	"github.com/ymz-ncnk/mok"
 )
 
@@ -124,9 +124,9 @@ func (m ReconnectDelegate) SetSendDeadline(deadline time.Time) (err error) {
 	return
 }
 
-func (m ReconnectDelegate) Send(seq base.Seq, cmd base.Cmd[any]) (n int,
+func (m ReconnectDelegate) Send(seq core.Seq, cmd core.Cmd[any]) (n int,
 	err error) {
-	vals, err := m.Call("Send", seq, mok.SafeVal[base.Cmd[any]](cmd))
+	vals, err := m.Call("Send", seq, mok.SafeVal[core.Cmd[any]](cmd))
 	if err != nil {
 		panic(err)
 	}
@@ -154,14 +154,14 @@ func (m ReconnectDelegate) SetReceiveDeadline(deadline time.Time) (
 	return
 }
 
-func (m ReconnectDelegate) Receive() (seq base.Seq, result base.Result, n int,
+func (m ReconnectDelegate) Receive() (seq core.Seq, result core.Result, n int,
 	err error) {
 	vals, err := m.Call("Receive")
 	if err != nil {
 		panic(err)
 	}
-	seq = vals[0].(base.Seq)
-	result, _ = vals[1].(base.Result)
+	seq = vals[0].(core.Seq)
+	result, _ = vals[1].(core.Result)
 	n = vals[2].(int)
 	err, _ = vals[3].(error)
 	return

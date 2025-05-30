@@ -1,4 +1,4 @@
-package base
+package core
 
 // Result represents the outcome of the Сommand execution.
 //

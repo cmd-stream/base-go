@@ -1,4 +1,4 @@
-package bcln
+package ccln
 
 import (
 	"errors"
@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cmd-stream/base-go"
-	bcmock "github.com/cmd-stream/base-go/client/testdata/mock"
-	"github.com/cmd-stream/base-go/testdata/mock"
+	"github.com/cmd-stream/core-go"
+	mock "github.com/cmd-stream/core-go/client/testdata/mock"
+	cmock "github.com/cmd-stream/core-go/testdata/mock"
 	asserterror "github.com/ymz-ncnk/assert/error"
 	"github.com/ymz-ncnk/mok"
 )
@@ -21,21 +21,21 @@ func TestClient(t *testing.T) {
 	t.Run("We should be able to send cmd and receive several Results",
 		func(t *testing.T) {
 			var (
-				wantSeq     base.Seq = 1
-				wantCmd              = mock.NewCmd()
+				wantSeq     core.Seq = 1
+				wantCmd              = cmock.NewCmd()
 				wantSendN   int      = 1
 				wantSendErr error    = nil
-				wantResult1          = mock.NewResult().RegisterLastOne(
+				wantResult1          = cmock.NewResult().RegisterLastOne(
 					func() (lastOne bool) { return false },
 				)
 				wantBytesRead1 int = 2
-				wantResult2        = mock.NewResult().RegisterLastOne(
+				wantResult2        = cmock.NewResult().RegisterLastOne(
 					func() (lastOne bool) { return true },
 				)
 				wantBytesRead2 int = 3
 				receiveDone        = make(chan struct{})
-				delegate           = bcmock.NewDelegate().RegisterSend(
-					func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+				delegate           = mock.NewDelegate().RegisterSend(
+					func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 						asserterror.Equal(seq, wantSeq, t)
 						asserterror.EqualDeep(cmd, wantCmd, t)
 						return wantSendN, nil
@@ -43,16 +43,16 @@ func TestClient(t *testing.T) {
 				).RegisterFlush(
 					func() (err error) { return nil },
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						<-receiveDone
 						return wantSeq, wantResult1, wantBytesRead1, nil
 					},
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						return wantSeq, wantResult2, wantBytesRead2, nil
 					},
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = errors.New("Delegate.Receive error")
 						return
 					},
@@ -62,7 +62,7 @@ func TestClient(t *testing.T) {
 				mocks = []*mok.Mock{wantCmd.Mock, wantResult1.Mock, wantResult2.Mock,
 					delegate.Mock}
 				client  = New[any](delegate, nil)
-				results = make(chan base.AsyncResult, 2)
+				results = make(chan core.AsyncResult, 2)
 			)
 			seq, n, err := client.Send(wantCmd, results)
 			asserterror.EqualError(err, wantSendErr, t)
@@ -87,33 +87,33 @@ func TestClient(t *testing.T) {
 		func(t *testing.T) {
 			var (
 				done        = make(chan struct{})
-				wantCmd     = mock.NewCmd()
-				wantResult1 = mock.NewResult().RegisterLastOne(
+				wantCmd     = cmock.NewCmd()
+				wantResult1 = cmock.NewResult().RegisterLastOne(
 					func() (lastOne bool) { return true },
 				)
 				wantResult1N int = 1
-				wantResult2      = mock.NewResult().RegisterLastOne(
+				wantResult2      = cmock.NewResult().RegisterLastOne(
 					func() (lastOne bool) { return true },
 				)
 				wantBytesRead2 int = 2
 				receiveDone        = make(chan struct{})
-				delegate           = bcmock.NewDelegate().RegisterSend(
-					func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+				delegate           = mock.NewDelegate().RegisterSend(
+					func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 						return
 					},
 				).RegisterFlush(
 					func() (err error) { return nil },
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						<-receiveDone
 						return 1, wantResult1, wantResult1N, nil
 					},
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						return 1, wantResult2, wantBytesRead2, nil
 					},
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = errors.New("Delegate.Receive error")
 						return
 					},
@@ -122,12 +122,12 @@ func TestClient(t *testing.T) {
 				)
 				mocks = []*mok.Mock{wantCmd.Mock, wantResult1.Mock, wantResult2.Mock,
 					delegate.Mock}
-				callback = func(seq base.Seq, result base.Result) {
+				callback = func(seq core.Seq, result core.Result) {
 					asserterror.EqualDeep(result, wantResult2, t)
 					close(done)
 				}
 				client  = New[any](delegate, WithUnexpectedResultCallback(callback))
-				results = make(chan base.AsyncResult, 1)
+				results = make(chan core.AsyncResult, 1)
 			)
 			client.Send(wantCmd, results)
 
@@ -139,13 +139,13 @@ func TestClient(t *testing.T) {
 
 	t.Run("Send should increment seq", func(t *testing.T) {
 		var (
-			wantSeq1    base.Seq = 1
-			wantSeq2    base.Seq = 2
-			wantCmd1             = mock.NewCmd()
-			wantCmd2             = mock.NewCmd()
+			wantSeq1    core.Seq = 1
+			wantSeq2    core.Seq = 2
+			wantCmd1             = cmock.NewCmd()
+			wantCmd2             = cmock.NewCmd()
 			receiveDone          = make(chan struct{})
-			delegate             = bcmock.NewDelegate().RegisterSend(
-				func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+			delegate             = mock.NewDelegate().RegisterSend(
+				func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 					asserterror.Equal(seq, wantSeq1, t)
 					asserterror.EqualDeep(cmd, wantCmd1, t)
 					return
@@ -153,13 +153,13 @@ func TestClient(t *testing.T) {
 			).RegisterFlush(
 				func() (err error) { return nil },
 			).RegisterSend(
-				func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+				func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 					asserterror.Equal(seq, wantSeq2, t)
 					asserterror.EqualDeep(cmd, wantCmd2, t)
 					return
 				},
 			).RegisterReceive(
-				func() (seq base.Seq, result base.Result, n int, err error) {
+				func() (seq core.Seq, result core.Result, n int, err error) {
 					<-receiveDone
 					err = errors.New("Delegate.Receive error")
 					return
@@ -186,14 +186,14 @@ func TestClient(t *testing.T) {
 	t.Run("Send should memorize cmd", func(t *testing.T) {
 		var (
 			receiveDone = make(chan struct{})
-			delegate    = bcmock.NewDelegate().RegisterSend(
-				func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+			delegate    = mock.NewDelegate().RegisterSend(
+				func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 					return
 				},
 			).RegisterFlush(
 				func() (err error) { return nil },
 			).RegisterReceive(
-				func() (seq base.Seq, result base.Result, n int, err error) {
+				func() (seq core.Seq, result core.Result, n int, err error) {
 					<-receiveDone
 					err = errors.New("Delegate.Receive error")
 					return
@@ -214,14 +214,14 @@ func TestClient(t *testing.T) {
 
 	t.Run("Seq should be incremented even if Send fails", func(t *testing.T) {
 		var (
-			wantSeq  base.Seq = 1
+			wantSeq  core.Seq = 1
 			wantErr           = errors.New("Delegate.Send error")
-			delegate          = bcmock.NewDelegate().RegisterSend(
-				func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+			delegate          = mock.NewDelegate().RegisterSend(
+				func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 					return 1, wantErr
 				},
 			).RegisterReceive(
-				func() (seq base.Seq, result base.Result, n int, err error) {
+				func() (seq core.Seq, result core.Result, n int, err error) {
 					err = errors.New("Delegate.Receive error")
 					return
 				},
@@ -242,12 +242,12 @@ func TestClient(t *testing.T) {
 	t.Run("If Send fails cmd should be forgotten", func(t *testing.T) {
 		var (
 			receiveDone = make(chan struct{})
-			delegate    = bcmock.NewDelegate().RegisterSend(
-				func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+			delegate    = mock.NewDelegate().RegisterSend(
+				func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 					return 0, errors.New("Delegate.Send error")
 				},
 			).RegisterReceive(
-				func() (seq base.Seq, result base.Result, n int, err error) {
+				func() (seq core.Seq, result core.Result, n int, err error) {
 					<-receiveDone
 					err = errors.New("Delegate.Receive error")
 					return
@@ -268,17 +268,17 @@ func TestClient(t *testing.T) {
 
 	t.Run("We should be able to send cmd by SendWithDeadline", func(t *testing.T) {
 		var (
-			wantSeq      base.Seq = 1
+			wantSeq      core.Seq = 1
 			wantDeadline          = time.Now()
-			wantCmd               = mock.NewCmd()
+			wantCmd               = cmock.NewCmd()
 			receiveDone           = make(chan struct{})
-			delegate              = bcmock.NewDelegate().RegisterSetSendDeadline(
+			delegate              = mock.NewDelegate().RegisterSetSendDeadline(
 				func(deadline time.Time) (err error) {
 					asserterror.SameTime(deadline, wantDeadline, delta, t)
 					return nil
 				},
 			).RegisterSend(
-				func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+				func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 					asserterror.Equal(seq, wantSeq, t)
 					asserterror.EqualDeep(cmd, wantCmd, t)
 					return
@@ -286,7 +286,7 @@ func TestClient(t *testing.T) {
 			).RegisterFlush(
 				func() (err error) { return nil },
 			).RegisterReceive(
-				func() (seq base.Seq, result base.Result, n int, err error) {
+				func() (seq core.Seq, result core.Result, n int, err error) {
 					<-receiveDone
 					err = errors.New("Delegate.Receive error")
 					return
@@ -310,14 +310,14 @@ func TestClient(t *testing.T) {
 	t.Run("Seq should be incremented even if SendWithDeadline fails",
 		func(t *testing.T) {
 			var (
-				wantSeq  base.Seq = 1
+				wantSeq  core.Seq = 1
 				wantErr           = errors.New("Delegate.Send error")
-				delegate          = bcmock.NewDelegate().RegisterSetSendDeadline(
+				delegate          = mock.NewDelegate().RegisterSetSendDeadline(
 					func(deadline time.Time) (err error) {
 						return wantErr
 					},
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = errors.New("Delegate.Receive error")
 						return
 					},
@@ -339,12 +339,12 @@ func TestClient(t *testing.T) {
 		func(t *testing.T) {
 			var (
 				wantErr  = errors.New("Delegate.SetSendDeadline error")
-				delegate = bcmock.NewDelegate().RegisterSetSendDeadline(
+				delegate = mock.NewDelegate().RegisterSetSendDeadline(
 					func(deadline time.Time) (err error) {
 						return wantErr
 					},
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = errors.New("Delegate.Receive error")
 						return
 					},
@@ -364,16 +364,16 @@ func TestClient(t *testing.T) {
 		func(t *testing.T) {
 			var (
 				wantErr  = errors.New("Delegate.Send error")
-				delegate = bcmock.NewDelegate().RegisterSetSendDeadline(
+				delegate = mock.NewDelegate().RegisterSetSendDeadline(
 					func(deadline time.Time) (err error) {
 						return nil
 					},
 				).RegisterSend(
-					func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+					func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 						return 0, wantErr
 					},
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = errors.New("Delegate.Receive error")
 						return
 					},
@@ -393,12 +393,12 @@ func TestClient(t *testing.T) {
 	t.Run("Client should forget cmd, if SendWithDeadline failed, because of Delegate.SetSendDeadline",
 		func(t *testing.T) {
 			var (
-				delegate = bcmock.NewDelegate().RegisterSetSendDeadline(
+				delegate = mock.NewDelegate().RegisterSetSendDeadline(
 					func(deadline time.Time) (err error) {
 						return errors.New("Delegate.SetSendDeadline error")
 					},
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = errors.New("Delegate.Receive error")
 						return
 					},
@@ -418,17 +418,17 @@ func TestClient(t *testing.T) {
 	t.Run("Client should forget cmd, if SendWithDeadline failed, because of Delegate.Send",
 		func(t *testing.T) {
 			var (
-				delegate = bcmock.NewDelegate().RegisterSetSendDeadline(
+				delegate = mock.NewDelegate().RegisterSetSendDeadline(
 					func(deadline time.Time) (err error) {
 						return nil
 					},
 				).RegisterSend(
-					func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+					func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 						err = errors.New("Delegate.Send error")
 						return
 					},
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = errors.New("Delegate.Receive error")
 						return
 					},
@@ -447,16 +447,16 @@ func TestClient(t *testing.T) {
 
 	t.Run("We should be able to forget cmd", func(t *testing.T) {
 		var (
-			cmd         = mock.NewCmd()
+			cmd         = cmock.NewCmd()
 			receiveDone = make(chan struct{})
-			delegate    = bcmock.NewDelegate().RegisterSend(
-				func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+			delegate    = mock.NewDelegate().RegisterSend(
+				func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 					return
 				},
 			).RegisterFlush(
 				func() (err error) { return nil },
 			).RegisterReceive(
-				func() (seq base.Seq, result base.Result, n int, err error) {
+				func() (seq core.Seq, result core.Result, n int, err error) {
 					<-receiveDone
 					err = errors.New("Delegate.Receive error")
 					return
@@ -480,8 +480,8 @@ func TestClient(t *testing.T) {
 		func(t *testing.T) {
 			var (
 				wantErr  = errors.New("Delegate.Receive error")
-				delegate = bcmock.NewDelegate().RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+				delegate = mock.NewDelegate().RegisterReceive(
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = wantErr
 						return
 					},
@@ -500,18 +500,18 @@ func TestClient(t *testing.T) {
 	t.Run("We should be able to close the client while it queues a result",
 		func(t *testing.T) {
 			var (
-				wantCmd    = mock.NewCmd()
-				wantResult = mock.NewResult().RegisterLastOne(
+				wantCmd    = cmock.NewCmd()
+				wantResult = cmock.NewResult().RegisterLastOne(
 					func() (lastOne bool) { return true },
 				)
-				results  = make(chan base.AsyncResult)
-				delegate = bcmock.NewDelegate().RegisterSend(
-					func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+				results  = make(chan core.AsyncResult)
+				delegate = mock.NewDelegate().RegisterSend(
+					func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 						err = errors.New("Delegate.Send error")
 						return
 					},
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						return 1, wantResult, 0, nil
 					},
 				).RegisterClose(
@@ -535,8 +535,8 @@ func TestClient(t *testing.T) {
 			var (
 				receiveDone = make(chan struct{})
 				wantErr     = errors.New("Delegate.Close error")
-				delegate    = bcmock.NewDelegate().RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+				delegate    = mock.NewDelegate().RegisterReceive(
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						<-receiveDone
 						err = errors.New("Delegate.Receive error")
 						return
@@ -563,17 +563,17 @@ func TestClient(t *testing.T) {
 		func(t *testing.T) {
 			var (
 				wantErr  = errors.New("flush error")
-				cmd1     = mock.NewCmd()
-				cmd2     = mock.NewCmd()
-				cmd3     = mock.NewCmd()
-				delegate = bcmock.NewDelegate().RegisterNSend(3,
-					func(seq base.Seq, cmd base.Cmd[any]) (n int, err error) {
+				cmd1     = cmock.NewCmd()
+				cmd2     = cmock.NewCmd()
+				cmd3     = cmock.NewCmd()
+				delegate = mock.NewDelegate().RegisterNSend(3,
+					func(seq core.Seq, cmd core.Cmd[any]) (n int, err error) {
 						return
 					},
 				).RegisterNFlush(3,
 					func() (err error) { return wantErr },
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = errors.New("Delegate.Receive error")
 						return
 					},
@@ -620,15 +620,15 @@ func TestClient(t *testing.T) {
 		func(t *testing.T) {
 			var (
 				reconected = make(chan struct{})
-				delegate   = bcmock.NewReconnectDelegate().RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+				delegate   = mock.NewReconnectDelegate().RegisterReceive(
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = net.ErrClosed
 						return
 					},
 				).RegisterReconnect(
 					func() error { close(reconected); return nil },
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = errors.New("Delegate.Receive error")
 						return
 					},
@@ -646,8 +646,8 @@ func TestClient(t *testing.T) {
 	t.Run("If the client is closed it should not reconnect", func(t *testing.T) {
 		var (
 			receiveDone = make(chan struct{})
-			delegate    = bcmock.NewReconnectDelegate().RegisterReceive(
-				func() (seq base.Seq, result base.Result, n int, err error) {
+			delegate    = mock.NewReconnectDelegate().RegisterReceive(
+				func() (seq core.Seq, result core.Result, n int, err error) {
 					<-receiveDone
 					err = ErrClosed
 					return
@@ -669,8 +669,8 @@ func TestClient(t *testing.T) {
 		func(t *testing.T) {
 			var (
 				wantErr  = errors.New("reconnection error")
-				delegate = bcmock.NewReconnectDelegate().RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+				delegate = mock.NewReconnectDelegate().RegisterReceive(
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = net.ErrClosed
 						return
 					},
@@ -692,10 +692,10 @@ func TestClient(t *testing.T) {
 	t.Run("Upon creation, the client should call KeepaliveDelegate.Keepalive()",
 		func(t *testing.T) {
 			var (
-				delegate = bcmock.NewKeepaliveDelegate().RegisterKeepalive(
+				delegate = mock.NewKeepaliveDelegate().RegisterKeepalive(
 					func(muSn *sync.Mutex) {},
 				).RegisterReceive(
-					func() (seq base.Seq, result base.Result, n int, err error) {
+					func() (seq core.Seq, result core.Result, n int, err error) {
 						err = errors.New("Delegate.Receive error")
 						return
 					},

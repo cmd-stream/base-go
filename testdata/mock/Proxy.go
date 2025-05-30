@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/cmd-stream/base-go"
+	base "github.com/cmd-stream/core-go"
 	"github.com/ymz-ncnk/mok"
 )
 

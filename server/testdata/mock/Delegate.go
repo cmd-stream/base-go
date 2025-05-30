@@ -1,4 +1,4 @@
-package bsmock
+package mock
 
 import (
 	"context"

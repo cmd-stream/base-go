@@ -1,4 +1,4 @@
-package bcln
+package ccln
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/cmd-stream/base-go"
+	base "github.com/cmd-stream/core-go"
 )
 
 const (

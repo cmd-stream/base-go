@@ -1,4 +1,4 @@
-module github.com/cmd-stream/base-go
+module github.com/cmd-stream/core-go
 
 go 1.23
 

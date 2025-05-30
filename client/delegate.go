@@ -1,11 +1,11 @@
-package bcln
+package ccln
 
 import (
 	"net"
 	"sync"
 	"time"
 
-	"github.com/cmd-stream/base-go"
+	base "github.com/cmd-stream/core-go"
 )
 
 // Delegate helps the client to send Commands and receive Results.

@@ -1,10 +1,10 @@
-package bsrv
+package csrv
 
 import (
 	"net"
 	"sync"
 
-	"github.com/cmd-stream/base-go"
+	"github.com/cmd-stream/core-go"
 	"github.com/ymz-ncnk/jointwork-go"
 )
 
@@ -41,7 +41,7 @@ type Server struct {
 //   - If Conf.WorkersCount == 0, it returns ErrNoWorkers.
 //   - If the server was shut down, it returns ErrShutdown.
 //   - If the server was closed, it returns ErrClosed.
-func (s *Server) Serve(listener base.Listener) (err error) {
+func (s *Server) Serve(listener core.Listener) (err error) {
 	if s.options.WorkersCount <= 0 {
 		return ErrNoWorkers
 	}
@@ -78,7 +78,7 @@ func (s *Server) Close() (err error) {
 	return s.receiver.Stop()
 }
 
-func (s *Server) setReceiver(listener base.Listener, conns chan net.Conn) {
+func (s *Server) setReceiver(listener core.Listener, conns chan net.Conn) {
 	s.mu.Lock()
 	s.receiver = NewConnReceiver(listener, conns, s.options.ConnReceiver...)
 	s.mu.Unlock()
