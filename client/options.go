@@ -1,4 +1,4 @@
-package ccln
+package client
 
 type Options struct {
 	UnexpectedResultCallback UnexpectedResultCallback

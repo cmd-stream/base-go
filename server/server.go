@@ -1,4 +1,4 @@
-package csrv
+package server
 
 import (
 	"net"

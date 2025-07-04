@@ -1,4 +1,4 @@
-package ccln
+package client
 
 import (
 	"errors"
